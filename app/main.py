@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from app.config import settings
@@ -17,6 +18,8 @@ setup_logging(["uvicorn.access"])
 
 # ---------------------------------------------------------------------------
 # Application instance
+# API8: Disable /docs, /redoc, and /openapi.json in production so the API
+#       surface is not publicly discoverable.
 # ---------------------------------------------------------------------------
 
 
@@ -33,6 +36,9 @@ app = FastAPI(
     description="An example FastAPI application demonstrating OWASP API Security Top 10 best practices.",
     version=settings.version,
     lifespan=lifespan,
+    docs_url=None if settings.environment == "production" else "/docs",
+    redoc_url=None if settings.environment == "production" else "/redoc",
+    openapi_url=None if settings.environment == "production" else "/openapi.json",
     license_info={
         "name": "MIT License",
         "url": "https://opensource.org/license/mit/",
@@ -44,8 +50,20 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# Exception handlers & routes
+# API8: Strict CORS — only listed origins may call credentialed endpoints.
+#       Avoid allow_origins=["*"] in production.
 # ---------------------------------------------------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins_list,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+# -----------------------------------------------------------------------------------------------------
+# API8: Global exception handlers to prevent information leakage and ensure consistent error responses.
+# -----------------------------------------------------------------------------------------------------
 register_exception_handlers(app)
 
 

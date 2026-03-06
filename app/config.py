@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # General settings
     environment: str = "development"
     version: str = "1.0.0"
+    allowed_origins: str = "http://localhost,http://localhost:3000"
 
     # Security settings
     secret_key: str = "your-secret-key"
@@ -25,6 +26,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_to_file: bool = False
     log_serialized: bool = False
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        """Return the allowed origins as a list of strings."""
+        return [origin.strip() for origin in self.allowed_origins.split(",")]
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
