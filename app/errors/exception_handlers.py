@@ -12,7 +12,7 @@ from loguru import logger
 from starlette.exceptions import HTTPException
 
 from app.errors.exceptions import AppError
-from app.errors.schemas import ErrorResponse
+from app.schemas.error_response import ErrorResponse
 from app.utils.request_info import get_request_info
 
 # Mapping of common HTTP status codes to standardized error codes for consistent API responses
