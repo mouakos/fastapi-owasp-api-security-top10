@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from loguru import logger
 
 from app.config import settings
+from app.errors.exception_handlers import register_exception_handlers
 from app.logging import setup_logging
 
 # ---------------------------------------------------------------------------
@@ -41,6 +42,11 @@ app = FastAPI(
         "url": "https://github.com/mouakos",
     },
 )
+
+# ---------------------------------------------------------------------------
+# Exception handlers & routes
+# ---------------------------------------------------------------------------
+register_exception_handlers(app)
 
 
 @app.get("/")
