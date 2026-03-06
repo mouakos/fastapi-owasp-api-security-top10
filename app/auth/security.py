@@ -9,6 +9,7 @@ from pwdlib import PasswordHash
 from app.config import settings
 from app.utils.time import utcnow
 
+# API2: Use a strong password hashing algorithm with automatic salting and adaptive work factor
 password_hash = PasswordHash.recommended()
 
 
