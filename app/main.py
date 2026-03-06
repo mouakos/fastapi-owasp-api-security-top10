@@ -10,6 +10,7 @@ from loguru import logger
 from app.config import settings
 from app.errors.exception_handlers import register_exception_handlers
 from app.logging import setup_logging
+from app.middleware import request_logging_middleware
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -48,6 +49,11 @@ app = FastAPI(
         "url": "https://github.com/mouakos",
     },
 )
+
+# ---------------------------------------------------------------------------
+# Middleware setup
+# ---------------------------------------------------------------------------
+app.middleware("http")(request_logging_middleware)
 
 # ---------------------------------------------------------------------------
 # API8: Strict CORS — only listed origins may call credentialed endpoints.
