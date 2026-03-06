@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # General settings
     environment: str = "development"
+    version: str = "1.0.0"
 
     # Security settings
     secret_key: str = "your-secret-key"
@@ -19,6 +20,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     jwt_issuer: str = "fastapi-owasp-app"
     jwt_audience: str = "fastapi-owasp-api"
+
+    # Logging settings
+    log_level: str = "INFO"
+    log_to_file: bool = False
+    log_serialized: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
