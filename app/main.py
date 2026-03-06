@@ -10,10 +10,10 @@ from loguru import logger
 from app.config import settings
 from app.errors.exception_handlers import register_exception_handlers
 from app.logging import setup_logging
-from app.middleware import request_logging_middleware
+from app.middleware import request_logging_middleware, security_headers_middleware
 
 # ---------------------------------------------------------------------------
-# Logging setup
+# Structured logging setup with Loguru.
 # ---------------------------------------------------------------------------
 setup_logging(["uvicorn.access"])
 
@@ -51,7 +51,12 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# Middleware setup
+# API8: Security headers on every response
+# ---------------------------------------------------------------------------
+app.middleware("http")(security_headers_middleware)
+
+# ---------------------------------------------------------------------------
+# API8: Request logging middleware to log all incoming requests and responses.
 # ---------------------------------------------------------------------------
 app.middleware("http")(request_logging_middleware)
 
@@ -67,9 +72,10 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-# -----------------------------------------------------------------------------------------------------
-# API8: Global exception handlers to prevent information leakage and ensure consistent error responses.
-# -----------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# API8: Global exception handlers to prevent information leakage and
+#       ensure consistent error responses.
+# ---------------------------------------------------------------------------
 register_exception_handlers(app)
 
 
