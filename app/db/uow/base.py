@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from types import TracebackType
 
+from app.db.repositories.item_repo_base import ItemRepositoryBase
 from app.db.repositories.user_repo_base import UserRepositoryBase
 
 
@@ -15,6 +16,7 @@ class UnitOfWorkBase(ABC):
 
     # Repositories are accessed as attributes
     users: UserRepositoryBase
+    items: ItemRepositoryBase
 
     @abstractmethod
     async def __aenter__(self) -> "UnitOfWorkBase":

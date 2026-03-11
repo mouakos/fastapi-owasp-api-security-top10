@@ -13,6 +13,7 @@ from app.db.models.user import User
 from app.db.session import AsyncSessionLocal
 from app.db.uow.base import UnitOfWorkBase
 from app.db.uow.sqlmodel_uow import SqlModelUnitOfWork
+from app.services.item_service import ItemService
 from app.services.user_services import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -32,6 +33,11 @@ async def get_uow() -> AsyncGenerator[UnitOfWorkBase]:
 def get_user_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> UserService:
     """Provide a user service wired to the current request unit of work."""
     return UserService(uow)
+
+
+def get_item_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> ItemService:
+    """Provide an item service wired to the current request unit of work."""
+    return ItemService(uow)
 
 
 async def get_current_user(
@@ -72,4 +78,5 @@ async def get_current_user(
 
 
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
+ItemServiceDependency = Annotated[ItemService, Depends(get_item_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]

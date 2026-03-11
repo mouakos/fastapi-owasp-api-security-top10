@@ -5,6 +5,7 @@ from types import TracebackType
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.db.repositories.sqlmodel_item_repo import SQLModelItemRepository
 from app.db.repositories.sqlmodel_user_repo import SQLModelUserRepository
 from app.db.uow.base import UnitOfWorkBase
 
@@ -21,6 +22,7 @@ class SqlModelUnitOfWork(UnitOfWorkBase):
         """Open a new session and initialize repositories."""
         self._session = self.session_factory()
         self.users = SQLModelUserRepository(self._session)
+        self.items = SQLModelItemRepository(self._session)
         return self
 
     async def __aexit__(

@@ -13,13 +13,13 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse, summary="Get my profile")
 async def get_me(current_user: CurrentUserDependency) -> User:
     """Return the authenticated user's profile information."""
     return current_user
 
 
-@router.patch("/me", response_model=UserResponse)
+@router.patch("/me", response_model=UserResponse, summary="Update my profile")
 async def update_me(
     data: UserUpdate,
     current_user: CurrentUserDependency,

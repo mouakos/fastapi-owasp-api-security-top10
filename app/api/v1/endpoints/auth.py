@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.v1.schemas.auth import Token
@@ -14,13 +14,20 @@ from app.dependencies import UserServiceDependency
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=201)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user",
+)
 async def register(data: UserCreate, user_service: UserServiceDependency) -> User:
     """Register a new user account."""
     return await user_service.create_user(data)
 
 
-@router.post("/token", response_model=Token)
+@router.post(
+    "/token", response_model=Token, summary="Authenticate a user and return an access token"
+)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], user_service: UserServiceDependency
 ) -> Token:
