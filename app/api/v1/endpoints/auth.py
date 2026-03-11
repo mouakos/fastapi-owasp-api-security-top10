@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post("/register", response_model=UserResponse, status_code=201)
 async def register(data: UserCreate, user_service: UserServiceDependency) -> User:
     """Register a new user account."""
-    return await user_service.create_user(data.username, data.email, data.password)
+    return await user_service.create_user(data)
 
 
 @router.post("/token", response_model=Token)

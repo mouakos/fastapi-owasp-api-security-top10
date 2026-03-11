@@ -2,13 +2,22 @@
 
 from collections.abc import AsyncGenerator
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
+from app.core.exceptions import AuthenticationError
+from app.core.security import decode_token
+from app.db.models.user import User
 from app.db.session import AsyncSessionLocal
 from app.db.uow.base import UnitOfWorkBase
 from app.db.uow.sqlmodel_uow import SqlModelUnitOfWork
 from app.services.user_services import UserService
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/token", scheme_name="Bearer", auto_error=False
+)
 
 
 async def get_uow() -> AsyncGenerator[UnitOfWorkBase]:
@@ -25,4 +34,42 @@ def get_user_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> UserSe
     return UserService(uow)
 
 
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    uow: Annotated[UnitOfWorkBase, Depends(get_uow)],
+) -> User:
+    """Resolve and return the authenticated user from a bearer token."""
+    if not token:
+        raise AuthenticationError("Missing authentication token")
+
+    try:
+        payload = decode_token(token)
+    except Exception as exc:
+        raise AuthenticationError("Invalid authentication token") from exc
+
+    if payload is None:
+        raise AuthenticationError("Invalid authentication token")
+
+    subject = payload.get("sub")
+    if not isinstance(subject, str):
+        raise AuthenticationError("Invalid authentication token")
+
+    try:
+        user_id = UUID(subject)
+    except ValueError as exc:
+        raise AuthenticationError("Invalid authentication token") from exc
+
+    async with uow as active_uow:
+        user = await active_uow.users.find_by_id(user_id)
+
+    if user is None:
+        raise AuthenticationError("User not found")
+
+    if not user.is_active:
+        raise AuthenticationError("User account is inactive")
+
+    return user
+
+
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
+CurrentUserDependency = Annotated[User, Depends(get_current_user)]

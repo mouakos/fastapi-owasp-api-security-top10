@@ -1,5 +1,8 @@
 """User service layer for business logic related to users."""
 
+from uuid import UUID
+
+from app.api.v1.schemas.user import UserCreate, UserUpdate
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.core.security import hash_password, verify_password
 from app.db.models.user import User
@@ -13,27 +16,29 @@ class UserService:
         """Initialize the service with a unit of work instance."""
         self._uow = uow
 
-    async def create_user(self, username: str, email: str, password: str) -> User:
+    async def create_user(self, data: UserCreate) -> User:
         """Create a new user with the provided details.
 
         Args:
-            username (str): The desired username for the new user.
-            email (str): The email address for the new user.
-            password (str): The plaintext password for the new user.
+            data (UserCreate): The details of the user to create.
 
         Returns:
             User: The newly created user instance.
         """
         async with self._uow as uow:
-            existing_user = await uow.users.find_by_email(email)
+            existing_user = await uow.users.find_by_email(data.email)
             if existing_user:
-                raise ConflictError("User")
+                raise ConflictError("User", "User with this email already exists")
 
-            existing_user = await uow.users.find_by_username(username)
+            existing_user = await uow.users.find_by_username(data.username)
             if existing_user:
-                raise ConflictError("User")
+                raise ConflictError("User", "User with this username already exists")
 
-            new_user = User(username=username, email=email, hashed_password=hash_password(password))
+            new_user = User(
+                username=data.username,
+                email=data.email,
+                hashed_password=hash_password(data.password),
+            )
 
             uow.users.add(new_user)
             await uow.commit()
@@ -62,20 +67,46 @@ class UserService:
 
             return user
 
-    async def get_user_by_email(self, email: str) -> User:
-        """Fetch a user by their email address.
+    async def get_user_by_id(self, user_id: UUID) -> User:
+        """Fetch a user by their ID.
 
         Args:
-            email (str): The email address to search for.
+            user_id (UUID): The unique identifier of the user to retrieve.
 
         Returns:
             User: The user with the specified email.
 
         Raises:
-            NotFoundError: If no user with the given email exists.
+            NotFoundError: If no user with the given ID exists.
         """
         async with self._uow as uow:
-            user = await uow.users.find_by_email(email)
+            user = await uow.users.find_by_id(user_id)
             if user is None:
-                raise NotFoundError("User", email)
+                raise NotFoundError("User", user_id)
             return user
+
+    async def update_user(self, user_id: UUID, data: UserUpdate) -> User:
+        """Update an existing user's information.
+
+        Args:
+            user_id (UUID): The unique identifier of the user to update.
+            data (UserUpdate): The fields to update on the user.
+
+        Returns:
+            User: The updated user instance.
+        """
+        async with self._uow as uow:
+            user = await uow.users.find_by_id(user_id)
+            if user is None:
+                raise NotFoundError("User", user_id)
+
+            if data.username is None:
+                return user
+
+            existing_user = await uow.users.find_by_username(data.username)
+            if existing_user and existing_user.id != user_id:
+                raise ConflictError("User", "Username already taken")
+
+            updated_user = await uow.users.update(user, username=data.username)
+            await uow.commit()
+            return updated_user
