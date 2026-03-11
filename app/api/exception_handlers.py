@@ -9,11 +9,41 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException
 
-from app.errors.exceptions import AppError
-from app.schemas.error_response import ErrorResponse
+from app.core.exceptions import AppError
 from app.utils.request_info import get_request_info
+from app.utils.time import utcnow
+
+
+class ErrorDetail(BaseModel):
+    """Error detail structure for consistent error responses."""
+
+    code: str
+    message: str
+    details: dict[str, Any] | None = None
+
+
+class ErrorResponse(BaseModel):
+    """Error response model for consistent API error responses."""
+
+    timestamp: str = Field(default_factory=lambda: utcnow().isoformat())
+    error: ErrorDetail
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "timestamp": "2024-06-01T12:00:00.000000+00:00",
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "The requested item was not found.",
+                    "details": {"resource": "Item", "resource_id": 123},
+                },
+            }
+        }
+    )
+
 
 # Mapping of common HTTP status codes to standardized error codes for consistent API responses
 HTTP_ERROR_CODE_MAP: dict[int, str] = {

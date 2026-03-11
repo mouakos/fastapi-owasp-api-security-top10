@@ -1,7 +1,6 @@
 """User model definition for the FastAPI app."""
 
 import enum
-import typing
 from datetime import datetime
 from uuid import UUID, uuid4
 
@@ -9,10 +8,8 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.db.models.item import Item
 from app.utils.time import utcnow
-
-if typing.TYPE_CHECKING:
-    from app.models.item import Item
 
 
 class UserRole(enum.StrEnum):
@@ -49,6 +46,6 @@ class User(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=utcnow)
 
-    items: list["Item"] = Relationship(
+    items: list[Item] = Relationship(
         back_populates="owner", sa_relationship_kwargs={"lazy": "selectin"}, cascade_delete=True
     )

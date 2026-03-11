@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import settings
@@ -30,3 +31,12 @@ async def get_async_session() -> AsyncGenerator[AsyncSession]:
             yield session
         finally:
             await session.close()
+
+
+async def init_db() -> None:
+    """Initialize database schema for all registered SQLModel tables."""
+    # Import models so SQLModel metadata includes all mapped tables.
+    from app.db.models import item, user  # noqa: F401
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)

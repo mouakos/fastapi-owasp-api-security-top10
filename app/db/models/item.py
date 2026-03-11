@@ -9,7 +9,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.utils.time import utcnow
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.db.models.user import User
 
 
 class Item(SQLModel, table=True):
