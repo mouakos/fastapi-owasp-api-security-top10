@@ -7,9 +7,9 @@ from uuid import UUID
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from app.core.exceptions import AuthenticationError
+from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.core.security import decode_token
-from app.db.models.user import User
+from app.db.models.user import User, UserRole
 from app.db.session import AsyncSessionLocal
 from app.db.uow.base import UnitOfWorkBase
 from app.db.uow.sqlmodel_uow import SqlModelUnitOfWork
@@ -71,12 +71,29 @@ async def get_current_user(
     if user is None:
         raise AuthenticationError("User not found")
 
-    if not user.is_active:
-        raise AuthenticationError("User account is inactive")
-
     return user
+
+
+def get_current_active_user(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Ensure the authenticated user is active."""
+    if not current_user.is_active:
+        raise AuthenticationError("User account is inactive")
+    return current_user
+
+
+def get_current_admin_user(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """Ensure the authenticated user is an admin."""
+    if current_user.role != UserRole.admin:
+        raise AuthorizationError("access", "admin resources")
+    return current_user
 
 
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
 ItemServiceDependency = Annotated[ItemService, Depends(get_item_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
+CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
+CurrentAdminUserDependency = Annotated[User, Depends(get_current_admin_user)]

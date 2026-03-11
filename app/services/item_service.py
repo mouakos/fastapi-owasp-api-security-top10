@@ -36,8 +36,8 @@ class ItemService:
             await uow.commit()
             return new_item
 
-    async def get_item_by_id(self, item_id: UUID, owner_id: UUID) -> Item:
-        """Retrieve an item by its unique identifier.
+    async def get_item(self, item_id: UUID, owner_id: UUID) -> Item:
+        """Retrieve an item by its identifier, ensuring it belongs to the specified owner.
 
         Args:
             item_id (UUID): The unique identifier of the item to retrieve.
@@ -57,22 +57,25 @@ class ItemService:
 
             return item
 
-    async def list_items(self, owner_id: UUID, skip: int = 0, limit: int = 20) -> list[Item]:
-        """List items with pagination.
+    async def list_items(self, owner_id: UUID | None, skip: int = 0, limit: int = 20) -> list[Item]:
+        """List items with optional owner filtering and pagination.
 
         Args:
-            owner_id (UUID): The ID of the user who owns the items.
+            owner_id (UUID | None): The ID of the user who owns the items. If None, list all items.
             skip: Number of records to skip (offset).
             limit: Maximum number of records to return.
 
         Returns:
             list[Item]: A list of items matching the pagination criteria.
         """
+        filters = {}
+        if owner_id is not None:
+            filters["owner_id"] = owner_id
         async with self._uow as uow:
             return await uow.items.find_all(
                 skip=skip,
                 limit=limit,
-                owner_id=owner_id,
+                **filters,
             )
 
     async def update_item(self, item_id: UUID, owner_id: UUID, data: ItemUpdate) -> Item:
@@ -87,7 +90,8 @@ class ItemService:
             Item: The updated item instance.
 
         Raises:
-            NotFoundError: If the item does not exist or does not belong to the owner.
+            NotFoundError: If the item does not exist.
+            AuthorizationError: If the item exists but does not belong to the owner.
         """
         async with self._uow as uow:
             item = await uow.items.find_by_id(item_id)
@@ -110,7 +114,8 @@ class ItemService:
             owner_id (UUID): The ID of the user who owns the item.
 
         Raises:
-            NotFoundError: If the item does not exist or does not belong to the owner.
+            NotFoundError: If the item does not exist.
+            AuthorizationError: If the item exists but does not belong to the owner.
         """
         async with self._uow as uow:
             item = await uow.items.find_by_id(item_id)

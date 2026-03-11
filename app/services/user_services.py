@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from app.api.v1.schemas.user import UserCreate, UserUpdate
+from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.core.security import hash_password, verify_password
 from app.db.models.user import User
@@ -108,5 +108,37 @@ class UserService:
                 raise ConflictError("User", "Username already taken")
 
             updated_user = await uow.users.update(user, username=data.username)
+            await uow.commit()
+            return updated_user
+
+    async def list_users(self, skip: int = 0, limit: int = 20) -> list[User]:
+        """List users with pagination.
+
+        Args:
+            skip: Number of records to skip (offset).
+            limit: Maximum number of records to return.
+
+        Returns:
+            list[User]: A list of users matching the pagination criteria.
+        """
+        async with self._uow as uow:
+            return await uow.users.find_all(skip=skip, limit=limit)
+
+    async def admin_update_user(self, user_id: UUID, data: UserAdminUpdate) -> User:
+        """Admin-level update of a user's information.
+
+        Args:
+            user_id (UUID): The unique identifier of the user to update.
+            data (UserAdminUpdate): The fields to update on the user.
+
+        Returns:
+            User: The updated user instance.
+
+        Raises:
+            NotFoundError: If no user with the given ID exists.
+        """
+        async with self._uow as uow:
+            user = await self.get_user_by_id(user_id)
+            updated_user = await uow.users.update(user, **data.model_dump(exclude_unset=True))
             await uow.commit()
             return updated_user
