@@ -43,7 +43,7 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
 
     Args:
         data (dict[str, Any]): The data to include in the token payload.
-        expires_delta (Optional[timedelta]): The time until the token expires.
+        expires_delta (timedelta | None, optional): The time until the token expires.
 
     Returns:
         str: The generated JWT access token.
@@ -67,7 +67,7 @@ def decode_token(token: str) -> dict[str, Any] | None:
         token (str): The JWT token to decode.
 
     Returns:
-        Optional[dict[str, Any]]: The decoded token payload if valid, None otherwise.
+        dict[str, Any] | None: The decoded token payload if valid, None otherwise.
     """
     return jwt.decode(
         token,

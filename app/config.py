@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     log_to_file: bool = False
     log_serialized: bool = False
 
+    # Account lockout settings
+    lockout_minutes: int = 15
+    max_failed_attempts: int = 5
+
     @property
     def allowed_origins_list(self) -> list[str]:
         """Return the allowed origins as a list of strings."""

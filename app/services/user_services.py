@@ -1,12 +1,15 @@
 """User service layer for business logic related to users."""
 
+from datetime import timedelta
 from uuid import UUID
 
 from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
+from app.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.core.security import hash_password, verify_password
 from app.db.models.user import User
 from app.db.uow.base import UnitOfWorkBase
+from app.utils.time import utcnow
 
 
 class UserService:
@@ -57,11 +60,33 @@ class UserService:
             AuthenticationError: If authentication fails due to invalid credentials.
         """
         user = await self._uow.users.find_by_email(identifier)
+
         if user is None:
             user = await self._uow.users.find_by_username(identifier)
 
+        # Check for account lockout before verifying password
+        if user and user.locked_until and user.locked_until > utcnow():
+            raise AuthenticationError(
+                "Account is temporarily locked due to multiple failed login attempts. Please try again later."
+            )
+
         if user is None or not verify_password(password, user.hashed_password):
+            if user:
+                # Increment failed login attempts and apply lockout if necessary
+                user.failed_login_attempts += 1
+                if user.failed_login_attempts >= settings.max_failed_attempts:
+                    user.locked_until = utcnow() + timedelta(minutes=settings.lockout_minutes)
+                await self._uow.commit()
             raise AuthenticationError("Invalid email/username or password")
+
+        if not user.is_active:
+            raise AuthenticationError("User account is inactive")
+
+        # Reset failed login attempts on successful authentication
+        if user.failed_login_attempts > 0:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            await self._uow.commit()
 
         return user
 
@@ -72,7 +97,7 @@ class UserService:
             user_id (UUID): The unique identifier of the user to retrieve.
 
         Returns:
-            User: The user with the specified email.
+            User: The user with the specified ID.
 
         Raises:
             NotFoundError: If no user with the given ID exists.

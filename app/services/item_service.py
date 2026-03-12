@@ -51,7 +51,7 @@ class ItemService:
             raise NotFoundError("Item", item_id)
 
         if item.owner_id != owner_id:
-            raise AuthorizationError("access", "Item")
+            raise AuthorizationError("retrieve", "Item")
 
         return item
 
@@ -96,7 +96,7 @@ class ItemService:
             raise NotFoundError("Item", item_id)
 
         if item.owner_id != owner_id:
-            raise AuthorizationError("access", "Item")
+            raise AuthorizationError("update", "Item")
 
         updated_item = await self._uow.items.update(item, **data.model_dump(exclude_unset=True))
         await self._uow.commit()
@@ -119,7 +119,7 @@ class ItemService:
             raise NotFoundError("Item", item_id)
 
         if item.owner_id != owner_id:
-            raise AuthorizationError("access", "Item")
+            raise AuthorizationError("delete", "Item")
 
         await self._uow.items.delete(item_id)
         await self._uow.commit()
