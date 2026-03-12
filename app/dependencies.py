@@ -27,7 +27,10 @@ async def get_uow() -> AsyncGenerator[UnitOfWorkBase]:
     The unit of work is instantiated once per request and can be used in
     services as an async context manager to control transaction boundaries.
     """
-    yield SqlModelUnitOfWork(AsyncSessionLocal)
+    sqlmodel_uow = SqlModelUnitOfWork(AsyncSessionLocal)
+
+    async with sqlmodel_uow as uow:
+        yield uow
 
 
 def get_user_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> UserService:
@@ -36,7 +39,14 @@ def get_user_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> UserSe
 
 
 def get_item_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> ItemService:
-    """Provide an item service wired to the current request unit of work."""
+    """Provide an item service wired to the current request unit of work.
+
+    Args:
+        uow (UnitOfWorkBase): The unit of work instance for the current request.
+
+    Returns:
+        ItemService: An instance of the item service with access to the unit of work.
+    """
     return ItemService(uow)
 
 
@@ -44,7 +54,18 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     uow: Annotated[UnitOfWorkBase, Depends(get_uow)],
 ) -> User:
-    """Resolve and return the authenticated user from a bearer token."""
+    """Resolve and return the authenticated user from a bearer token.
+
+    Args:
+        token (str): The bearer token extracted from the Authorization header.
+        uow (UnitOfWorkBase): The unit of work instance for database access.
+
+    Returns:
+        User: The authenticated user associated with the token.
+
+    Raises:
+        AuthenticationError: If the token is missing, invalid, or does not correspond to an existing user.
+    """
     if not token:
         raise AuthenticationError("Missing authentication token")
 
@@ -77,7 +98,17 @@ async def get_current_user(
 def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
-    """Ensure the authenticated user is active."""
+    """Ensure the authenticated user is active.
+
+    Args:
+        current_user (User): The authenticated user resolved from the token.
+
+    Returns:
+        User: The same user if they are active.
+
+    Raises:
+        AuthenticationError: If the user account is inactive.
+    """
     if not current_user.is_active:
         raise AuthenticationError("User account is inactive")
     return current_user
@@ -86,7 +117,17 @@ def get_current_active_user(
 def get_current_admin_user(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> User:
-    """Ensure the authenticated user is an admin."""
+    """Ensure the authenticated user is an admin.
+
+    Args:
+        current_user (User): The authenticated and active user.
+
+    Returns:
+        User: The same user if they have an admin role.
+
+    Raises:
+        AuthorizationError: If the user does not have admin privileges.
+    """
     if current_user.role != UserRole.admin:
         raise AuthorizationError("access", "admin resources")
     return current_user

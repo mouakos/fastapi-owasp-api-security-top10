@@ -25,16 +25,15 @@ class ItemService:
         Returns:
             Item: The newly created item instance.
         """
-        async with self._uow as uow:
-            new_item = Item(
-                title=data.title,
-                description=data.description,
-                price=data.price,
-                owner_id=owner_id,
-            )
-            uow.items.add(new_item)
-            await uow.commit()
-            return new_item
+        new_item = Item(
+            title=data.title,
+            description=data.description,
+            price=data.price,
+            owner_id=owner_id,
+        )
+        self._uow.items.add(new_item)
+        await self._uow.commit()
+        return new_item
 
     async def get_item(self, item_id: UUID, owner_id: UUID) -> Item:
         """Retrieve an item by its identifier, ensuring it belongs to the specified owner.
@@ -46,16 +45,15 @@ class ItemService:
         Returns:
             Item: The item instance with the specified ID.
         """
-        async with self._uow as uow:
-            item = await uow.items.find_by_id(item_id)
+        item = await self._uow.items.find_by_id(item_id)
 
-            if item is None:
-                raise NotFoundError("Item", item_id)
+        if item is None:
+            raise NotFoundError("Item", item_id)
 
-            if item.owner_id != owner_id:
-                raise AuthorizationError("access", "Item")
+        if item.owner_id != owner_id:
+            raise AuthorizationError("access", "Item")
 
-            return item
+        return item
 
     async def list_items(self, owner_id: UUID | None, skip: int = 0, limit: int = 20) -> list[Item]:
         """List items with optional owner filtering and pagination.
@@ -71,12 +69,11 @@ class ItemService:
         filters = {}
         if owner_id is not None:
             filters["owner_id"] = owner_id
-        async with self._uow as uow:
-            return await uow.items.find_all(
-                skip=skip,
-                limit=limit,
-                **filters,
-            )
+        return await self._uow.items.find_all(
+            skip=skip,
+            limit=limit,
+            **filters,
+        )
 
     async def update_item(self, item_id: UUID, owner_id: UUID, data: ItemUpdate) -> Item:
         """Update an existing item with the provided fields.
@@ -93,18 +90,17 @@ class ItemService:
             NotFoundError: If the item does not exist.
             AuthorizationError: If the item exists but does not belong to the owner.
         """
-        async with self._uow as uow:
-            item = await uow.items.find_by_id(item_id)
+        item = await self._uow.items.find_by_id(item_id)
 
-            if item is None:
-                raise NotFoundError("Item", item_id)
+        if item is None:
+            raise NotFoundError("Item", item_id)
 
-            if item.owner_id != owner_id:
-                raise AuthorizationError("access", "Item")
+        if item.owner_id != owner_id:
+            raise AuthorizationError("access", "Item")
 
-            updated_item = await uow.items.update(item, **data.model_dump(exclude_unset=True))
-            await uow.commit()
-            return updated_item
+        updated_item = await self._uow.items.update(item, **data.model_dump(exclude_unset=True))
+        await self._uow.commit()
+        return updated_item
 
     async def delete_item(self, item_id: UUID, owner_id: UUID) -> None:
         """Delete an item by its identifier.
@@ -117,14 +113,13 @@ class ItemService:
             NotFoundError: If the item does not exist.
             AuthorizationError: If the item exists but does not belong to the owner.
         """
-        async with self._uow as uow:
-            item = await uow.items.find_by_id(item_id)
+        item = await self._uow.items.find_by_id(item_id)
 
-            if item is None:
-                raise NotFoundError("Item", item_id)
+        if item is None:
+            raise NotFoundError("Item", item_id)
 
-            if item.owner_id != owner_id:
-                raise AuthorizationError("access", "Item")
+        if item.owner_id != owner_id:
+            raise AuthorizationError("access", "Item")
 
-            await uow.items.delete(item_id)
-            await uow.commit()
+        await self._uow.items.delete(item_id)
+        await self._uow.commit()
