@@ -25,11 +25,17 @@ async def request_logging_middleware(
     Returns:
         Response: The HTTP response from the next handler.
     """
+    request_info = get_request_info(request)
+    logger.info(
+        "http_request_received",
+        **asdict(request_info),
+    )
+
     start = time.perf_counter()
     response = await call_next(request)
     duration = time.perf_counter() - start
     status_code = response.status_code
-    request_info = get_request_info(request)
+
     logger.info(
         "http_request_completed",
         **asdict(request_info),

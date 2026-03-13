@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -10,10 +9,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException
 
 from app.core.exceptions import AppError
-from app.utils.request_info import get_request_info
 from app.utils.time import utcnow
 
 
@@ -95,8 +94,6 @@ def build_response(
 
 def log_error(
     *,
-    request: Request,
-    status_code: int,
     error_code: str,
     message: str,
     event: str,
@@ -105,10 +102,7 @@ def log_error(
     exception: bool = False,
 ) -> None:
     """Log the error event with structured context."""
-    request_info = get_request_info(request)
     log = logger.bind(
-        **asdict(request_info),
-        status_code=status_code,
         error_code=error_code,
         error_message=message,
     ).opt(exception=exception)
@@ -136,12 +130,10 @@ def register_exception_handlers(app: FastAPI) -> None:
     """Register global exception handlers for the FastAPI application."""
 
     @app.exception_handler(AppError)
-    async def app_exception_handler(request: Request, exc: AppError) -> JSONResponse:
+    async def app_exception_handler(_: Request, exc: AppError) -> JSONResponse:
         """Handle all custom application exceptions."""
         log_level = "ERROR" if exc.status_code >= 500 else "INFO"
         log_error(
-            request=request,
-            status_code=exc.status_code,
             error_code=exc.error_code,
             message=exc.message,
             details=exc.details,
@@ -156,13 +148,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
         """Handle Pydantic validation errors."""
         log_error(
-            request=request,
-            status_code=422,
             error_code="INVALID_INPUT",
             message="Request validation failed",
             details={"errors": normalize_validation_errors(exc)},
@@ -176,12 +164,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
         """Handle standard HTTP exceptions raised by FastAPI or Starlette."""
         error_code = HTTP_ERROR_CODE_MAP.get(exc.status_code, "HTTP_ERROR")
         log_error(
-            request=request,
-            status_code=exc.status_code,
             error_code=error_code,
             message=str(exc.detail),
             event="http_exception",
@@ -193,11 +179,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(request: Request, _: Exception) -> JSONResponse:
+    async def unhandled_exception_handler(_: Request, __: Exception) -> JSONResponse:
         """Catch-all handler for unexpected errors."""
         log_error(
-            request=request,
-            status_code=500,
             error_code="INTERNAL_ERROR",
             message="An unexpected error occurred. Please try again later.",
             event="unhandled_exception",
@@ -208,4 +192,19 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=500,
             error_code="INTERNAL_ERROR",
             message="An unexpected error occurred. Please try again later.",
+        )
+
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exceeded_handler(_: Request, exc: RateLimitExceeded) -> JSONResponse:
+        """Handle rate limit exceeded errors."""
+        log_error(
+            error_code="TOO_MANY_REQUESTS",
+            message=exc.detail,
+            event="rate_limit_exceeded",
+            level="WARNING",
+        )
+        return build_response(
+            status_code=exc.status_code,
+            error_code="TOO_MANY_REQUESTS",
+            message=exc.detail,
         )

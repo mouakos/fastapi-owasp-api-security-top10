@@ -9,6 +9,7 @@ from loguru import logger
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.middleware import request_logging_middleware, security_headers_middleware
+from app.api.rate_limiter import limiter
 from app.api.v1.router import api_v1_router
 from app.config import settings
 from app.core.logging import setup_logging
@@ -51,6 +52,10 @@ app = FastAPI(
         "url": "https://github.com/mouakos",
     },
 )
+# ---------------------------------------------------------------------------
+# API4: Attach rate limiter
+# ---------------------------------------------------------------------------
+app.state.limiter = limiter
 
 # ---------------------------------------------------------------------------
 # API8: Security headers on every response
