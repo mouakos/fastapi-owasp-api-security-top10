@@ -3,12 +3,14 @@
 from datetime import timedelta
 from uuid import UUID
 
+from app.api.v1.schemas.auth import Token
 from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
 from app.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
-from app.core.security import hash_password, verify_password
 from app.db.models.user import User
 from app.db.uow.base import UnitOfWorkBase
+from app.security.jwt import create_access_token
+from app.security.password import hash_password, verify_password
 from app.utils.time import utcnow
 
 
@@ -46,7 +48,7 @@ class UserService:
         await self._uow.commit()
         return new_user
 
-    async def authenticate_user(self, identifier: str, password: str) -> User:
+    async def authenticate_user(self, identifier: str, password: str) -> Token:
         """Authenticate a user by email or username and password.
 
         Args:
@@ -54,7 +56,7 @@ class UserService:
             password (str): The plaintext password to verify.
 
         Returns:
-            User: The authenticated user.
+            Token: The access token for the authenticated user.
 
         Raises:
             AuthenticationError: If authentication fails due to invalid credentials.
@@ -88,7 +90,8 @@ class UserService:
             user.locked_until = None
             await self._uow.commit()
 
-        return user
+        access_token = create_access_token({"sub": str(user.id)})
+        return Token(access_token=access_token)
 
     async def get_user_by_id(self, user_id: UUID) -> User:
         """Fetch a user by their ID.

@@ -1,41 +1,18 @@
-"""Authentication and authorization utilities for the API."""
+"""JWT utility functions for creating and decoding JSON Web Tokens.
+
+This module provides functions to create JWT access tokens with customizable payloads
+and expiration times, as well as functions to decode and verify JWT tokens, ensuring
+they are valid and have not expired.
+It uses the `PyJWT` library to handle JWT encoding and decoding securely.
+"""
 
 from datetime import timedelta
 from typing import Any
 
 import jwt
-from pwdlib import PasswordHash
 
 from app.config import settings
 from app.utils.time import utcnow
-
-# API2: Use a strong password hashing algorithm with automatic salting and adaptive work factor
-password_hash = PasswordHash.recommended()
-
-
-def hash_password(password: str) -> str:
-    """Hash a plaintext password.
-
-    Args:
-        password (str): The plaintext password to hash.
-
-    Returns:
-        str: The hashed password.
-    """
-    return password_hash.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against a hashed password.
-
-    Args:
-        plain_password (str): The plaintext password to verify.
-        hashed_password (str): The hashed password to compare against.
-
-    Returns:
-        bool: True if the password is correct, False otherwise.
-    """
-    return password_hash.verify(plain_password, hashed_password)
 
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:

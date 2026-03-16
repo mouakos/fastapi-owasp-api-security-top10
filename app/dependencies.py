@@ -8,11 +8,11 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.exceptions import AuthenticationError, AuthorizationError
-from app.core.security import decode_token
 from app.db.models.user import User, UserRole
 from app.db.session import AsyncSessionLocal
 from app.db.uow.base import UnitOfWorkBase
 from app.db.uow.sqlmodel_uow import SqlModelUnitOfWork
+from app.security.jwt import decode_token
 from app.services.item_service import ItemService
 from app.services.user_services import UserService
 
