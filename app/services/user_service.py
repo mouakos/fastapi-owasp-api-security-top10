@@ -5,13 +5,17 @@ from uuid import UUID
 
 from app.api.v1.schemas.auth import Token
 from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
-from app.core.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.persistence.models.user import User
 from app.persistence.uow.base import UnitOfWorkBase
 from app.security.jwt import create_access_token
 from app.security.password import hash_password, verify_password
 from app.utils.time import utcnow
+
+LOCKOUT_DURATION_MINUTES = (
+    5  # Lockout duration in minutes after reaching maximum failed login attempts
+)
+MAX_FAILED_ATTEMPTS = 5  # Maximum allowed failed login attempts before lockout
 
 
 class UserService:
@@ -76,8 +80,8 @@ class UserService:
             if user:
                 # Increment failed login attempts and apply lockout if necessary
                 user.failed_login_attempts += 1
-                if user.failed_login_attempts >= settings.max_failed_attempts:
-                    user.locked_until = utcnow() + timedelta(minutes=settings.lockout_minutes)
+                if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
+                    user.locked_until = utcnow() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
                 await self._uow.commit()
             raise AuthenticationError("Invalid email/username or password")
 

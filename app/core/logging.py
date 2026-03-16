@@ -169,7 +169,7 @@ def setup_logging(silenced_loggers: list[str] | None = None) -> None:
 
     logger.configure(
         patcher=_dispatch_patchers,  # type: ignore[arg-type]
-        extra={"version": settings.version, "environment": settings.environment},
+        extra={"environment": settings.environment},
     )
 
     _setup_sinks(settings.log_level, settings.log_to_file, settings.log_serialized)

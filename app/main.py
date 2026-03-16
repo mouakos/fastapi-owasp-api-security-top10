@@ -41,7 +41,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(
     title="FastAPI OWASP API Security Top 10",
     description="An example FastAPI application demonstrating OWASP API Security Top 10 best practices.",
-    version=settings.version,
+    version="1.0.0",
     lifespan=lifespan,
     docs_url=None if settings.environment == "production" else "/docs",
     redoc_url=None if settings.environment == "production" else "/redoc",

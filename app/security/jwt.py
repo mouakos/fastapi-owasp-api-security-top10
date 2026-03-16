@@ -14,6 +14,10 @@ import jwt
 from app.core.config import settings
 from app.utils.time import utcnow
 
+ALGORITHM = "HS256"
+JWT_ISSUER = "fastapi-owasp-app"
+JWT_AUDIENCE = "fastapi-owasp-api"
+
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token.
@@ -30,13 +34,11 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
     to_encode.update(
         {
             "exp": expire,
-            "iss": settings.jwt_issuer,
-            "aud": settings.jwt_audience,
+            "iss": JWT_ISSUER,
+            "aud": JWT_AUDIENCE,
         }
     )
-    return jwt.encode(
-        to_encode, settings.secret_key.get_secret_value(), algorithm=settings.algorithm
-    )
+    return jwt.encode(to_encode, settings.secret_key.get_secret_value(), algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> dict[str, Any] | None:
@@ -51,7 +53,7 @@ def decode_token(token: str) -> dict[str, Any] | None:
     return jwt.decode(
         token,
         settings.secret_key.get_secret_value(),
-        algorithms=[settings.algorithm],
-        audience=settings.jwt_audience,
-        issuer=settings.jwt_issuer,
+        algorithms=[ALGORITHM],
+        audience=JWT_AUDIENCE,
+        issuer=JWT_ISSUER,
     )
