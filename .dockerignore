@@ -1,0 +1,38 @@
+# Version control
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environment
+.venv/
+
+# Local environment files (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Development / test artefacts
+tests/
+*.db
+*.sqlite
+
+# Editor / OS artefacts
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# CI / tooling configs not needed at runtime
+.pre-commit-config.yaml
+pyproject.toml
+uv.lock
+
+# Docker files themselves
+Dockerfile
+docker-compose*.yml
