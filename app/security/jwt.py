@@ -34,7 +34,9 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
             "aud": settings.jwt_audience,
         }
     )
-    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    return jwt.encode(
+        to_encode, settings.secret_key.get_secret_value(), algorithm=settings.algorithm
+    )
 
 
 def decode_token(token: str) -> dict[str, Any] | None:
@@ -48,7 +50,7 @@ def decode_token(token: str) -> dict[str, Any] | None:
     """
     return jwt.decode(
         token,
-        settings.secret_key,
+        settings.secret_key.get_secret_value(),
         algorithms=[settings.algorithm],
         audience=settings.jwt_audience,
         issuer=settings.jwt_issuer,
