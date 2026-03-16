@@ -2,7 +2,9 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
+from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
@@ -12,7 +14,7 @@ from app.api.middleware import request_logging_middleware, security_headers_midd
 from app.api.rate_limiter import limiter
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
-from app.core.logging import setup_logging
+from app.core.logging import register_log_patcher, setup_logging
 from app.persistence.database import init_db
 
 # ---------------------------------------------------------------------------
@@ -68,6 +70,22 @@ app.middleware("http")(security_headers_middleware)
 app.middleware("http")(request_logging_middleware)
 
 # ---------------------------------------------------------------------------
+# API8: Correlation ID middleware to trace requests across logs and services.
+# ---------------------------------------------------------------------------
+app.add_middleware(CorrelationIdMiddleware)
+
+
+def _inject_request_id(record: dict[str, Any]) -> None:
+    """Loguru patcher to inject the correlation ID from the request context into log records."""
+    request_id = correlation_id.get()
+    if request_id:
+        record["extra"]["request_id"] = request_id
+
+
+register_log_patcher(_inject_request_id)
+
+
+# ---------------------------------------------------------------------------
 # API8: Strict CORS — only listed origins may call credentialed endpoints.
 #       Avoid allow_origins=["*"] in production.
 # ---------------------------------------------------------------------------
@@ -76,10 +94,11 @@ app.add_middleware(
     allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    expose_headers=["X-Request-ID"],
 )
 
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # API8: Global exception handlers to prevent information leakage and
 #       ensure consistent error responses.
 # ---------------------------------------------------------------------------

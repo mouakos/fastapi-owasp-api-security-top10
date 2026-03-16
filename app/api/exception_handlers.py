@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from asgi_correlation_id import correlation_id
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -84,11 +85,14 @@ def build_response(
     error_code: str,
     message: str,
     details: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     """Log the error event and build a JSONResponse with consistent structure."""
     response_model = build_error_response(error_code, message, details)
     return JSONResponse(
-        status_code=status_code, content=response_model.model_dump(exclude_none=True)
+        status_code=status_code,
+        content=response_model.model_dump(exclude_none=True),
+        headers=headers,
     )
 
 
@@ -192,6 +196,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=500,
             error_code="INTERNAL_ERROR",
             message="An unexpected error occurred. Please try again later.",
+            headers={"X-Request-ID": correlation_id.get() or ""},
         )
 
     @app.exception_handler(RateLimitExceeded)

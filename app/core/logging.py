@@ -2,6 +2,8 @@
 
 import logging
 import sys
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
@@ -19,6 +21,38 @@ LOG_FORMAT = (
     "<level>{message}</level> - "
     "<yellow>{extra}</yellow>"
 )
+# ---------------------------------------------------------------------------
+# Patcher registry — lets multiple modules register log record patchers
+# ---------------------------------------------------------------------------
+
+_patchers: list[Callable[[dict[str, Any]], None]] = []
+
+
+def register_log_patcher(fn: Callable[[dict[str, Any]], None]) -> None:
+    """Add a patcher function to the global Loguru patcher registry.
+
+    Patchers are called on every log record before it is forwarded to any sink.
+    Use this to inject context (e.g. trace_id, span_id) into
+    record["extra"] from a ContextVar or any other source.
+
+    Patchers are applied in registration order. Registering the same function
+    multiple times will cause it to run multiple times.
+
+    Args:
+        fn: A callable that accepts a Loguru record dict and mutates it in place.
+    """
+    _patchers.append(fn)
+
+
+def _dispatch_patchers(record: dict[str, Any]) -> None:
+    """Run all registered patchers on a single Loguru log record.
+
+    Args:
+        record: The Loguru log record to mutate.
+    """
+    for patcher in _patchers:
+        patcher(record)
+
 
 # ---------------------------------------------------------------------------
 # Standard-library logging bridge
@@ -133,7 +167,10 @@ def setup_logging(silenced_loggers: list[str] | None = None) -> None:
     """
     logger.remove()
 
-    logger.configure(extra={"version": settings.version, "environment": settings.environment})
+    logger.configure(
+        patcher=_dispatch_patchers,  # type: ignore[arg-type]
+        extra={"version": settings.version, "environment": settings.environment},
+    )
 
     _setup_sinks(settings.log_level, settings.log_to_file, settings.log_serialized)
     _intercept_standard_logging(settings.log_level)
