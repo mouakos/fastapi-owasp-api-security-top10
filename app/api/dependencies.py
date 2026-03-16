@@ -8,8 +8,8 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.exceptions import AuthenticationError, AuthorizationError
+from app.persistence.database import AsyncSessionLocal
 from app.persistence.models.user import User, UserRole
-from app.persistence.session import AsyncSessionLocal
 from app.persistence.uow.base import UnitOfWorkBase
 from app.persistence.uow.sqlmodel_uow import SqlModelUnitOfWork
 from app.security.jwt import decode_token

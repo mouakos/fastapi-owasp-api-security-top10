@@ -13,7 +13,7 @@ from app.api.rate_limiter import limiter
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.persistence.session import init_db
+from app.persistence.database import init_db
 
 # ---------------------------------------------------------------------------
 # Structured logging setup with Loguru.
