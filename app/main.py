@@ -97,4 +97,4 @@ async def root() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # API v1 router
 # ---------------------------------------------------------------------------
-app.include_router(api_v1_router)
+app.include_router(api_v1_router, prefix="/api/v1")
