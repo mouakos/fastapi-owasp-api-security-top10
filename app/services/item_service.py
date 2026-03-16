@@ -55,7 +55,9 @@ class ItemService:
 
         return item
 
-    async def list_items(self, owner_id: UUID | None, skip: int = 0, limit: int = 20) -> list[Item]:
+    async def list_items(
+        self, owner_id: UUID | None, skip: int = 0, limit: int = 20
+    ) -> tuple[list[Item], int]:
         """List items with optional owner filtering and pagination.
 
         Args:
@@ -64,16 +66,14 @@ class ItemService:
             limit: Maximum number of records to return.
 
         Returns:
-            list[Item]: A list of items matching the pagination criteria.
+            tuple[list[Item], int]: A list of items and the total matching count.
         """
         filters = {}
         if owner_id is not None:
             filters["owner_id"] = owner_id
-        return await self._uow.items.find_all(
-            skip=skip,
-            limit=limit,
-            **filters,
-        )
+        items = await self._uow.items.find_all(skip=skip, limit=limit, **filters)
+        total = await self._uow.items.count(**filters)
+        return items, total
 
     async def update_item(self, item_id: UUID, owner_id: UUID, data: ItemUpdate) -> Item:
         """Update an existing item with the provided fields.

@@ -1,10 +1,11 @@
 """FastAPI dependency providers for database and service layer objects."""
 
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.exceptions import AuthenticationError, AuthorizationError
@@ -138,3 +139,24 @@ ItemServiceDependency = Annotated[ItemService, Depends(get_item_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
 CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
 CurrentAdminUserDependency = Annotated[User, Depends(get_current_admin_user)]
+
+
+@dataclass
+class PaginationParams:
+    """Reusable pagination query parameters.
+
+    Attributes:
+        page: 1-based page number.
+        size: Number of records per page. Capped at 100 (API4).
+    """
+
+    page: int = Query(default=1, ge=1, description="Page number (1-based)")
+    size: int = Query(default=20, ge=1, le=100, description="Number of items per page")
+
+    @property
+    def skip(self) -> int:
+        """Compute offset from page number."""
+        return (self.page - 1) * self.size
+
+
+PaginationDependency = Annotated[PaginationParams, Depends(PaginationParams)]

@@ -135,7 +135,7 @@ class UserService:
         await self._uow.commit()
         return updated_user
 
-    async def list_users(self, skip: int = 0, limit: int = 20) -> list[User]:
+    async def list_users(self, skip: int = 0, limit: int = 20) -> tuple[list[User], int]:
         """List users with pagination.
 
         Args:
@@ -143,9 +143,11 @@ class UserService:
             limit: Maximum number of records to return.
 
         Returns:
-            list[User]: A list of users matching the pagination criteria.
+            tuple[list[User], int]: A list of users and the total matching count.
         """
-        return await self._uow.users.find_all(skip=skip, limit=limit)
+        users = await self._uow.users.find_all(skip=skip, limit=limit)
+        total = await self._uow.users.count()
+        return users, total
 
     async def admin_update_user(self, user_id: UUID, data: UserAdminUpdate) -> User:
         """Admin-level update of a user's information.

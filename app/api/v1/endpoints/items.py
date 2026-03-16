@@ -2,24 +2,27 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, status
 
-from app.api.deps import CurrentActiveUserDependency, ItemServiceDependency
+from app.api.deps import CurrentActiveUserDependency, ItemServiceDependency, PaginationDependency
+from app.api.v1.schemas.common import Page
 from app.api.v1.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 from app.persistence.models.item import Item
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ItemResponse], summary="List my items")
+@router.get("/", response_model=Page[ItemResponse], summary="List my items")
 async def list_my_items(
     current_user: CurrentActiveUserDependency,
     item_service: ItemServiceDependency,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100),
-) -> list[Item]:
+    pagination: PaginationDependency,
+) -> Page[Item]:
     """Return paginated items that belong to the authenticated user."""
-    return await item_service.list_items(current_user.id, skip=skip, limit=limit)
+    items, total = await item_service.list_items(
+        current_user.id, skip=pagination.skip, limit=pagination.size
+    )
+    return Page(items=items, total=total, page=pagination.page, size=pagination.size)
 
 
 @router.get("/{item_id}", response_model=ItemResponse, summary="Get one of my items")

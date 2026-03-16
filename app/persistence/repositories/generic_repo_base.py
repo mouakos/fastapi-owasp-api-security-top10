@@ -81,6 +81,18 @@ class GenericRepositoryBase[T](ABC):
         ...
 
     @abstractmethod
+    async def count(self, **filter: Any) -> int:  # noqa: ANN401
+        """Return the total number of entities matching the given filter.
+
+        Args:
+            **filter (Any): Arbitrary keyword arguments representing filter criteria.
+
+        Returns:
+            int: The total number of matching entities.
+        """
+        ...
+
+    @abstractmethod
     async def exists(self, id: UUID) -> bool:
         """Check if an entity with the given identifier exists.
 

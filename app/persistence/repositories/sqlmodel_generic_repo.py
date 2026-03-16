@@ -3,6 +3,7 @@
 from typing import Any, TypeVar, override
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -103,6 +104,21 @@ class SQLModelGenericRepository(GenericRepositoryBase[ModelT]):
         instance = await self.find_by_id(id)
         if instance is not None:
             await self.session.delete(instance)
+
+    @override
+    async def count(self, **filter: Any) -> int:  # noqa: ANN401
+        """Return the total number of records matching the given filter.
+
+        Args:
+            **filter (Any): Column name / value pairs used as WHERE conditions.
+
+        Returns:
+            int: Total number of matching records.
+        """
+        result = await self.session.exec(
+            select(func.count()).select_from(self.model).filter_by(**filter)
+        )
+        return result.one()
 
     @override
     async def exists(self, id: UUID) -> bool:  # noqa: A002
