@@ -7,7 +7,7 @@ from dataclasses import asdict
 from fastapi import Request, Response
 from loguru import logger
 
-from app.utils.request_info import get_request_info
+from app.api.request_info import get_request_info
 
 
 # ---------------------------------------------------------------------------
