@@ -11,8 +11,8 @@ from app.api.dependencies import (
 )
 from app.api.v1.schemas.item import ItemResponse
 from app.api.v1.schemas.user import UserAdminUpdate, UserResponse
-from app.db.models.item import Item
-from app.db.models.user import User
+from app.persistence.models.item import Item
+from app.persistence.models.user import User
 
 router = APIRouter()
 

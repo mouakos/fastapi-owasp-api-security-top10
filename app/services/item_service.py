@@ -4,8 +4,8 @@ from uuid import UUID
 
 from app.api.v1.schemas.item import ItemCreate, ItemUpdate
 from app.core.exceptions import AuthorizationError, NotFoundError
-from app.db.models.item import Item
-from app.db.uow.base import UnitOfWorkBase
+from app.persistence.models.item import Item
+from app.persistence.uow.base import UnitOfWorkBase
 
 
 class ItemService:

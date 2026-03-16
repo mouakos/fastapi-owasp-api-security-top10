@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, status
 
 from app.api.dependencies import CurrentActiveUserDependency, ItemServiceDependency
 from app.api.v1.schemas.item import ItemCreate, ItemResponse, ItemUpdate
-from app.db.models.item import Item
+from app.persistence.models.item import Item
 
 router = APIRouter()
 

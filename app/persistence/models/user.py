@@ -8,7 +8,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.db.models.item import Item
+from app.persistence.models.item import Item
 from app.utils.time import utcnow
 
 

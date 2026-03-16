@@ -1,7 +1,7 @@
 """Abstract item repository interface defining the contract for item data access."""
 
-from app.db.models.item import Item
-from app.db.repositories.generic_repo_base import GenericRepositoryBase
+from app.persistence.models.item import Item
+from app.persistence.repositories.generic_repo_base import GenericRepositoryBase
 
 
 class ItemRepositoryBase(GenericRepositoryBase[Item]):

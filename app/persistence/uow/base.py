@@ -3,8 +3,8 @@
 from abc import ABC, abstractmethod
 from types import TracebackType
 
-from app.db.repositories.item_repo_base import ItemRepositoryBase
-from app.db.repositories.user_repo_base import UserRepositoryBase
+from app.persistence.repositories.item_repo_base import ItemRepositoryBase
+from app.persistence.repositories.user_repo_base import UserRepositoryBase
 
 
 class UnitOfWorkBase(ABC):

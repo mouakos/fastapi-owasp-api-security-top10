@@ -5,9 +5,9 @@ from typing import override
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.db.models.user import User
-from app.db.repositories.sqlmodel_generic_repo import SQLModelGenericRepository
-from app.db.repositories.user_repo_base import UserRepositoryBase
+from app.persistence.models.user import User
+from app.persistence.repositories.sqlmodel_generic_repo import SQLModelGenericRepository
+from app.persistence.repositories.user_repo_base import UserRepositoryBase
 
 
 class SQLModelUserRepository(SQLModelGenericRepository[User], UserRepositoryBase):

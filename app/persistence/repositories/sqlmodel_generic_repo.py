@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.db.repositories.generic_repo_base import GenericRepositoryBase
+from app.persistence.repositories.generic_repo_base import GenericRepositoryBase
 
 ModelT = TypeVar("ModelT", bound=SQLModel)
 

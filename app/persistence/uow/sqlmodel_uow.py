@@ -5,9 +5,9 @@ from types import TracebackType
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.db.repositories.sqlmodel_item_repo import SQLModelItemRepository
-from app.db.repositories.sqlmodel_user_repo import SQLModelUserRepository
-from app.db.uow.base import UnitOfWorkBase
+from app.persistence.repositories.sqlmodel_item_repo import SQLModelItemRepository
+from app.persistence.repositories.sqlmodel_user_repo import SQLModelUserRepository
+from app.persistence.uow.base import UnitOfWorkBase
 
 
 class SqlModelUnitOfWork(UnitOfWorkBase):

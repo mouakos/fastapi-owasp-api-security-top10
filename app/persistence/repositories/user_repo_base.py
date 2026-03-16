@@ -2,8 +2,8 @@
 
 from abc import abstractmethod
 
-from app.db.models.user import User
-from app.db.repositories.generic_repo_base import GenericRepositoryBase
+from app.persistence.models.user import User
+from app.persistence.repositories.generic_repo_base import GenericRepositoryBase
 
 
 class UserRepositoryBase(GenericRepositoryBase[User]):

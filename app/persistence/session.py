@@ -21,7 +21,7 @@ AsyncSessionLocal = async_sessionmaker(
 async def init_db() -> None:
     """Initialize database schema for all registered SQLModel tables."""
     # Import models so SQLModel metadata includes all mapped tables.
-    from app.db.models import item, user  # noqa: F401
+    from app.persistence.models import item, user  # noqa: F401
 
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)

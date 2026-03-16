@@ -10,7 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, field_validator
 
-from app.db.models.user import UserRole
+from app.persistence.models.user import UserRole
 
 
 class UserCreate(BaseModel):

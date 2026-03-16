@@ -2,9 +2,9 @@
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.db.models.item import Item
-from app.db.repositories.item_repo_base import ItemRepositoryBase
-from app.db.repositories.sqlmodel_generic_repo import SQLModelGenericRepository
+from app.persistence.models.item import Item
+from app.persistence.repositories.item_repo_base import ItemRepositoryBase
+from app.persistence.repositories.sqlmodel_generic_repo import SQLModelGenericRepository
 
 
 class SQLModelItemRepository(SQLModelGenericRepository[Item], ItemRepositoryBase):

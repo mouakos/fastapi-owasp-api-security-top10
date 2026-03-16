@@ -9,7 +9,7 @@ from app.api.dependencies import UserServiceDependency
 from app.api.rate_limiter import limiter
 from app.api.v1.schemas.auth import Token
 from app.api.v1.schemas.user import UserCreate, UserResponse
-from app.db.models.user import User
+from app.persistence.models.user import User
 
 router = APIRouter()
 
