@@ -1,7 +1,5 @@
 """Database session management for asynchronous SQLModel operations."""
 
-from collections.abc import AsyncGenerator
-
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -18,19 +16,6 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-
-async def get_async_session() -> AsyncGenerator[AsyncSession]:
-    """Get an asynchronous database session.
-
-    Yields:
-        AsyncSession: An asynchronous database session.
-    """
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
 
 
 async def init_db() -> None:
