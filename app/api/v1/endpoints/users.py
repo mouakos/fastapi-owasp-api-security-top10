@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter
 
+from app.api.dependencies import CurrentActiveUserDependency, UserServiceDependency
 from app.api.v1.schemas.user import UserResponse, UserUpdate
 from app.db.models.user import User
-from app.dependencies import CurrentActiveUserDependency, UserServiceDependency
 
 router = APIRouter()
 

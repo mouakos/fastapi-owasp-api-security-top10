@@ -4,15 +4,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from app.api.v1.schemas.item import ItemResponse
-from app.api.v1.schemas.user import UserAdminUpdate, UserResponse
-from app.db.models.item import Item
-from app.db.models.user import User
-from app.dependencies import (
+from app.api.dependencies import (
     CurrentAdminUserDependency,
     ItemServiceDependency,
     UserServiceDependency,
 )
+from app.api.v1.schemas.item import ItemResponse
+from app.api.v1.schemas.user import UserAdminUpdate, UserResponse
+from app.db.models.item import Item
+from app.db.models.user import User
 
 router = APIRouter()
 
