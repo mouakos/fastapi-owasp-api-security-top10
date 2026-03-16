@@ -8,6 +8,7 @@ from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.middleware import request_logging_middleware, security_headers_middleware
@@ -55,9 +56,10 @@ app = FastAPI(
     },
 )
 # ---------------------------------------------------------------------------
-# API4: Attach rate limiter
+# API4: Attach rate limiter middleware to enforce rate limits on endpoints.
 # ---------------------------------------------------------------------------
 app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 # ---------------------------------------------------------------------------
 # API8: Security headers on every response
@@ -95,7 +97,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-    expose_headers=["X-Request-ID"],
+    expose_headers=[
+        "X-Request-ID",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+    ],
 )
 
 # ---------------------------------------------------------------------------

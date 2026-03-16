@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import UserServiceDependency
@@ -21,7 +21,12 @@ router = APIRouter()
     summary="Register a new user",
 )
 @limiter.limit("10/minute")
-async def register(request: Request, data: UserCreate, user_service: UserServiceDependency) -> User:  # noqa: ARG001
+async def register(
+    request: Request,  # noqa: ARG001
+    response: Response,  # noqa: ARG001
+    data: UserCreate,
+    user_service: UserServiceDependency,
+) -> User:  # noqa: ARG001
     """Register a new user account."""
     return await user_service.create_user(data)
 
@@ -32,6 +37,7 @@ async def register(request: Request, data: UserCreate, user_service: UserService
 @limiter.limit("10/minute")
 async def login(
     request: Request,  # noqa: ARG001
+    response: Response,  # noqa: ARG001
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: UserServiceDependency,
 ) -> Token:
