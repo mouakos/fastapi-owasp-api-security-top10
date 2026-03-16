@@ -99,6 +99,7 @@ def build_response(
 def log_error(
     *,
     error_code: str,
+    status_code: int,
     message: str,
     event: str,
     details: dict[str, Any] | None = None,
@@ -109,6 +110,7 @@ def log_error(
     log = logger.bind(
         error_code=error_code,
         error_message=message,
+        status_code=status_code,
     ).opt(exception=exception)
     if details:
         log = log.bind(error_details=details)
@@ -139,6 +141,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         log_level = "ERROR" if exc.status_code >= 500 else "INFO"
         log_error(
             error_code=exc.error_code,
+            status_code=exc.status_code,
             message=exc.message,
             details=exc.details,
             event="app_exception",
@@ -156,6 +159,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         """Handle Pydantic validation errors."""
         log_error(
             error_code="INVALID_INPUT",
+            status_code=422,
             message="Request validation failed",
             details={"errors": normalize_validation_errors(exc)},
             event="validation_error",
@@ -173,6 +177,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         error_code = HTTP_ERROR_CODE_MAP.get(exc.status_code, "HTTP_ERROR")
         log_error(
             error_code=error_code,
+            status_code=exc.status_code,
             message=str(exc.detail),
             event="http_exception",
         )
@@ -187,6 +192,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         """Catch-all handler for unexpected errors."""
         log_error(
             error_code="INTERNAL_ERROR",
+            status_code=500,
             message="An unexpected error occurred. Please try again later.",
             event="unhandled_exception",
             level="ERROR",
@@ -204,6 +210,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         """Handle rate limit exceeded errors."""
         log_error(
             error_code="TOO_MANY_REQUESTS",
+            status_code=exc.status_code,
             message=exc.detail,
             event="rate_limit_exceeded",
             level="WARNING",
