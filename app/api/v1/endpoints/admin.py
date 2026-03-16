@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from app.api.dependencies import (
+from app.api.deps import (
     CurrentAdminUserDependency,
     ItemServiceDependency,
     UserServiceDependency,

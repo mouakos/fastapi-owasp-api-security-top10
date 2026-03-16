@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.dependencies import CurrentActiveUserDependency, UserServiceDependency
+from app.api.deps import CurrentActiveUserDependency, UserServiceDependency
 from app.api.v1.schemas.user import UserResponse, UserUpdate
 from app.persistence.models.user import User
 
