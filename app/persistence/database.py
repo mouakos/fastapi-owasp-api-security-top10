@@ -25,8 +25,8 @@ async def seed_admin() -> None:
     from the environment (via Settings). Skips silently when any value is
     empty or an account with that email already exists.
     """
+    from app.core.security.password import hash_password
     from app.persistence.models.user import User, UserRole
-    from app.security.password import hash_password
 
     cfg = settings
     if not (cfg.first_admin_email and cfg.first_admin_username and cfg.first_admin_password):

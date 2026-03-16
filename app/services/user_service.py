@@ -7,10 +7,10 @@ from app.api.v1.schemas.auth import Token
 from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
+from app.core.security.jwt import create_access_token
+from app.core.security.password import hash_password, verify_password
 from app.persistence.models.user import User
 from app.persistence.uow.base import UnitOfWorkBase
-from app.security.jwt import create_access_token
-from app.security.password import hash_password, verify_password
 from app.utils.time import utcnow
 
 
