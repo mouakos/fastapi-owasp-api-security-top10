@@ -5,7 +5,7 @@ import sys
 
 from loguru import logger
 
-from app.config import settings
+from app.core.config import settings
 
 # ---------------------------------------------------------------------------
 # Constants

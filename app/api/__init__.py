@@ -11,7 +11,7 @@ from app.api.exception_handlers import register_exception_handlers
 from app.api.middleware import request_logging_middleware, security_headers_middleware
 from app.api.rate_limiter import limiter
 from app.api.v1.router import api_v1_router
-from app.config import settings
+from app.core.config import settings
 from app.core.logging import setup_logging
 from app.persistence.session import init_db
 
