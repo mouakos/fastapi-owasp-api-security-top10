@@ -8,6 +8,7 @@ from uuid import UUID
 from fastapi import Depends, Query
 from fastapi.security import OAuth2PasswordBearer
 
+from app.core.config import settings
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.persistence.database import AsyncSessionLocal
 from app.persistence.models.user import User, UserRole
@@ -18,7 +19,7 @@ from app.services.item_service import ItemService
 from app.services.user_service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/token", scheme_name="Bearer", auto_error=False
+    tokenUrl=f"{settings.api_prefix}/auth/token", scheme_name="Bearer", auto_error=False
 )
 
 

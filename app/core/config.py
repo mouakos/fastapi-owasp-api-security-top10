@@ -10,10 +10,14 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./test.db"
 
     environment: str = "development"
+    api_prefix: str = "/api/v1"
     allowed_origins: str = "http://localhost,http://localhost:3000"
 
     secret_key: SecretStr = SecretStr("supersecretkey")
     access_token_expire_minutes: int = 30
+    algorithm: str = "HS256"
+    jwt_issuer: str = "fastapi-owasp-app"
+    jwt_audience: str = "fastapi-owasp-api"
 
     log_level: str = "INFO"
     log_to_file: bool = False
@@ -22,6 +26,9 @@ class Settings(BaseSettings):
     first_admin_email: EmailStr = "admin@example.com"
     first_admin_username: str = "admin"
     first_admin_password: SecretStr = SecretStr("admin")
+
+    max_failed_login_attempts: int = 5
+    lockout_duration_minutes: int = 5
 
     @property
     def allowed_origins_list(self) -> list[str]:
