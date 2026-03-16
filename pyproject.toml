@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "aiosqlite>=0.22.1",
+    "alembic>=1.18.4",
     "asgi-correlation-id>=4.3.4",
     "fastapi[standard]>=0.135.1",
     "loguru>=0.7.3",
@@ -22,6 +23,7 @@ dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+exclude = ["alembic"]
 
 [tool.ruff.format]
 quote-style = "double"
