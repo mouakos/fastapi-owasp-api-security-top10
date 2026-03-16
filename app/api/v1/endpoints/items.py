@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from app.api.deps import CurrentActiveUserDependency, ItemServiceDependency, PaginationDependency
+from app.api.deps import CurrentUserDependency, ItemServiceDependency, PaginationDependency
 from app.api.v1.schemas.common import Page
 from app.api.v1.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 from app.persistence.models.item import Item
@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get("/", response_model=Page[ItemResponse], summary="List my items")
 async def list_my_items(
-    current_user: CurrentActiveUserDependency,
+    current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
     pagination: PaginationDependency,
 ) -> Page[Item]:
@@ -28,7 +28,7 @@ async def list_my_items(
 @router.get("/{item_id}", response_model=ItemResponse, summary="Get one of my items")
 async def get_my_item(
     item_id: UUID,
-    current_user: CurrentActiveUserDependency,
+    current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
 ) -> Item:
     """Return one item owned by the authenticated user."""
@@ -43,7 +43,7 @@ async def get_my_item(
 )
 async def create_my_item(
     data: ItemCreate,
-    current_user: CurrentActiveUserDependency,
+    current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
 ) -> Item:
     """Create a new item owned by the authenticated user."""
@@ -54,7 +54,7 @@ async def create_my_item(
 async def update_my_item(
     item_id: UUID,
     data: ItemUpdate,
-    current_user: CurrentActiveUserDependency,
+    current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
 ) -> Item:
     """Partially update a user-owned item and return the updated record."""
@@ -66,7 +66,7 @@ async def update_my_item(
 )
 async def delete_my_item(
     item_id: UUID,
-    current_user: CurrentActiveUserDependency,
+    current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
 ) -> None:
     """Delete an item owned by the authenticated user."""

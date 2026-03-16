@@ -93,30 +93,14 @@ async def get_current_user(
     if user is None:
         raise AuthenticationError("User not found")
 
+    if not user.is_active:
+        raise AuthenticationError("User account is inactive")
+
     return user
 
 
-def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> User:
-    """Ensure the authenticated user is active.
-
-    Args:
-        current_user (User): The authenticated user resolved from the token.
-
-    Returns:
-        User: The same user if they are active.
-
-    Raises:
-        AuthenticationError: If the user account is inactive.
-    """
-    if not current_user.is_active:
-        raise AuthenticationError("User account is inactive")
-    return current_user
-
-
 def get_current_admin_user(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """Ensure the authenticated user is an admin.
 
@@ -132,13 +116,6 @@ def get_current_admin_user(
     if current_user.role != UserRole.admin:
         raise AuthorizationError("access", "admin resources")
     return current_user
-
-
-UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
-ItemServiceDependency = Annotated[ItemService, Depends(get_item_service)]
-CurrentUserDependency = Annotated[User, Depends(get_current_user)]
-CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
-CurrentAdminUserDependency = Annotated[User, Depends(get_current_admin_user)]
 
 
 @dataclass
@@ -159,4 +136,8 @@ class PaginationParams:
         return (self.page - 1) * self.size
 
 
+UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
+ItemServiceDependency = Annotated[ItemService, Depends(get_item_service)]
+CurrentUserDependency = Annotated[User, Depends(get_current_user)]
+CurrentAdminUserDependency = Annotated[User, Depends(get_current_admin_user)]
 PaginationDependency = Annotated[PaginationParams, Depends(PaginationParams)]

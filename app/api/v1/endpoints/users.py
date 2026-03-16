@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.deps import CurrentActiveUserDependency, UserServiceDependency
+from app.api.deps import CurrentUserDependency, UserServiceDependency
 from app.api.v1.schemas.user import UserResponse, UserUpdate
 from app.persistence.models.user import User
 
@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse, summary="Get my profile")
-async def get_me(current_user: CurrentActiveUserDependency) -> User:
+async def get_me(current_user: CurrentUserDependency) -> User:
     """Return the authenticated user's profile information."""
     return current_user
 
@@ -22,7 +22,7 @@ async def get_me(current_user: CurrentActiveUserDependency) -> User:
 @router.patch("/me", response_model=UserResponse, summary="Update my profile")
 async def update_me(
     data: UserUpdate,
-    current_user: CurrentActiveUserDependency,
+    current_user: CurrentUserDependency,
     user_service: UserServiceDependency,
 ) -> User:
     """Update the authenticated user's profile information."""
