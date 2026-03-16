@@ -10,10 +10,7 @@ from sqlmodel import SQLModel
 
 from alembic import context
 from app.core.config import settings
-from app.persistence.models import (  # noqa: F401 - ensure models are imported so metadata is complete
-    item,
-    user,
-)
+from app.persistence.models import User, Item  # noqa: F401 - ensure models are imported for metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

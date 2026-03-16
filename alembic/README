@@ -1,1 +1,61 @@
-Generic single-database configuration with an async dbapi.
+# Alembic — Database Migrations
+
+Async migration environment for the FastAPI OWASP API Security Top 10 project.
+Uses SQLModel metadata and an async SQLAlchemy engine (aiosqlite / asyncpg).
+
+---
+
+## Common Commands
+
+### Generate a new migration (autogenerate from model changes)
+```bash
+uv run alembic revision --autogenerate -m "describe your change"
+```
+> Always review the generated file in `alembic/versions/` before applying it.
+
+### Apply all pending migrations
+```bash
+uv run alembic upgrade head
+```
+
+### Apply migrations up to a specific revision
+```bash
+uv run alembic upgrade <revision_id>
+```
+
+### Roll back the last migration
+```bash
+uv run alembic downgrade -1
+```
+
+### Roll back all migrations (reset to empty schema)
+```bash
+uv run alembic downgrade base
+```
+
+### Show current revision applied to the database
+```bash
+uv run alembic current
+```
+
+### Show full migration history
+```bash
+uv run alembic history --verbose
+```
+
+### Show pending migrations (not yet applied)
+```bash
+uv run alembic history -r current:head
+```
+
+---
+
+## Notes
+
+- Migrations are stored in `alembic/versions/`.
+- The `env.py` file imports `app.persistence.models` to register all SQLModel tables
+  with the metadata before autogenerate compares the schema.
+- Never edit a migration file that has already been applied to a shared database.
+  Create a new migration instead.
+- The `alembic.ini` file must remain at the project root so the `alembic` CLI can
+  find it when run from that directory.
