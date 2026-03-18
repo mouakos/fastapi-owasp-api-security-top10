@@ -20,15 +20,19 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28",
     "mypy>=1.19.1",
     "pre-commit>=4.5.1",
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6",
     "ruff>=0.15.5",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-exclude = ["alembic"]
+exclude = ["alembic", "tests"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -40,7 +44,7 @@ select = [
   "F","E","W","I","UP","B","C4","SIM","RET","ARG","N","D","ANN","ASYNC"
 ]
 ignore = [
-  "ANN001","ANN002","ANN101","ANN102",
+  "ANN001","ANN002",
   "E501" # formatter handles line length
 ]
 
@@ -49,6 +53,7 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["D104","F401"]
+"tests/**/*.py" = ["D", "ANN", "ARG"]
 
 
 [tool.mypy]
@@ -60,3 +65,8 @@ warn_unreachable = true
 no_implicit_optional = true
 show_error_codes = true
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["tests"]
