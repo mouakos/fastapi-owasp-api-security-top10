@@ -16,7 +16,6 @@ from app.api.rate_limiter import limiter
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
 from app.core.logging import register_log_patcher, setup_logging
-from app.persistence.database import init_db
 
 # ---------------------------------------------------------------------------
 # Structured logging setup with Loguru.
@@ -33,8 +32,9 @@ setup_logging(["uvicorn.access"])
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     """Lifespan context manager to perform startup and shutdown tasks."""
-    await init_db()
+    # Perform any async startup tasks here (e.g., database connections, background tasks)
     yield
+    # Perform any async shutdown tasks here (e.g., closing database connections, flushing logs)
     await logger.complete()  # Ensure all logs are flushed on shutdown
 
 

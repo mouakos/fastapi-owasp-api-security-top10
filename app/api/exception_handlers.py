@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 
 from app.core.exceptions import AppError
@@ -187,24 +188,6 @@ def register_exception_handlers(app: FastAPI) -> None:
             message=str(exc.detail),
         )
 
-    @app.exception_handler(Exception)
-    async def unhandled_exception_handler(_: Request, __: Exception) -> JSONResponse:
-        """Catch-all handler for unexpected errors."""
-        log_error(
-            error_code="INTERNAL_ERROR",
-            status_code=500,
-            message="An unexpected error occurred. Please try again later.",
-            event="unhandled_exception",
-            level="ERROR",
-            exception=True,
-        )
-        return build_response(
-            status_code=500,
-            error_code="INTERNAL_ERROR",
-            message="An unexpected error occurred. Please try again later.",
-            headers={"X-Request-ID": correlation_id.get() or ""},
-        )
-
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_exceeded_handler(_: Request, exc: RateLimitExceeded) -> JSONResponse:
         """Handle rate limit exceeded errors."""
@@ -219,4 +202,45 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             error_code="TOO_MANY_REQUESTS",
             message=exc.detail,
+        )
+
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_error_handler(_: Request, exc: SQLAlchemyError) -> JSONResponse:
+        """Fallback for any other SQLAlchemy errors."""
+        message = "An unexpected database error occurred."
+        error_code = "INTERNAL_ERROR"
+        status_code = 500
+        log_error(
+            error_code=error_code,
+            status_code=status_code,
+            message=exc.orig.args[0] if exc.orig else message,  # type: ignore [attr-defined]
+            event="db_error",
+            level="ERROR",
+        )
+        return build_response(
+            status_code=status_code,
+            error_code=error_code,
+            message=message,
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(_: Request, __: Exception) -> JSONResponse:
+        """Catch-all handler for unexpected errors."""
+        message = "An unexpected error occurred. Please try again later."
+        error_code = "INTERNAL_ERROR"
+        status_code = 500
+
+        log_error(
+            error_code=error_code,
+            status_code=status_code,
+            message=message,
+            event="unhandled_exception",
+            level="ERROR",
+            exception=True,
+        )
+        return build_response(
+            status_code=status_code,
+            error_code=error_code,
+            message=message,
+            headers={"X-Request-ID": correlation_id.get() or ""},
         )
