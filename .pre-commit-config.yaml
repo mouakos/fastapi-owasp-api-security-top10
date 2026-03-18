@@ -8,7 +8,7 @@ repos:
         entry: .venv/Scripts/ruff.exe check
         language: system
         types: [python]
-        exclude: ^^alembic/
+        exclude: ^alembic/|^tests/
 
   # Run the formatter.
   - repo: local
@@ -18,7 +18,7 @@ repos:
         entry: .venv/Scripts/ruff.exe format
         language: system
         types: [python]
-        exclude: ^alembic/
+        exclude: ^alembic/|^tests/
 
   # Type checking with MyPy
   - repo: local
