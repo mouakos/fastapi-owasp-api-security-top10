@@ -30,8 +30,6 @@ Thumbs.db
 
 # CI / tooling configs not needed at runtime
 .pre-commit-config.yaml
-pyproject.toml
-uv.lock
 
 # Docker files themselves
 Dockerfile
