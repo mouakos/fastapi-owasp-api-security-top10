@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./test.db"
 
     environment: str = "development"
-    api_prefix: str = "/api/v1"
+    api_v1_str: str = "/api/v1"
     allowed_origins: str = "http://localhost,http://localhost:3000"
 
     secret_key: SecretStr = SecretStr("supersecretkey")

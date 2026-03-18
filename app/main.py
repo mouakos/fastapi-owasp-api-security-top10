@@ -7,6 +7,7 @@ from typing import Any
 from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 from loguru import logger
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -38,14 +39,23 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     await logger.complete()  # Ensure all logs are flushed on shutdown
 
 
+def custom_generate_unique_id(route: APIRoute) -> str:
+    """Custom function to generate unique operation IDs for OpenAPI schema."""
+    tag = route.tags[0] if route.tags else "default"
+    return f"{tag}_{route.name}"
+
+
 app = FastAPI(
     title="FastAPI OWASP API Security Top 10",
     description="An example FastAPI application demonstrating OWASP API Security Top 10 best practices.",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url=None if settings.environment == "production" else "/docs",
-    redoc_url=None if settings.environment == "production" else "/redoc",
-    openapi_url=None if settings.environment == "production" else "/openapi.json",
+    docs_url=None if settings.environment == "production" else f"{settings.api_v1_str}/docs",
+    redoc_url=None if settings.environment == "production" else f"{settings.api_v1_str}/redoc",
+    openapi_url=None
+    if settings.environment == "production"
+    else f"{settings.api_v1_str}/openapi.json",
+    generate_unique_id_function=custom_generate_unique_id,
     license_info={
         "name": "MIT License",
         "url": "https://opensource.org/license/mit/",
@@ -112,16 +122,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 register_exception_handlers(app)
 
-
-@app.get("/")
-async def root() -> dict[str, str]:
-    """Root endpoint."""
-    return {
-        "message": "Welcome to the FastAPI OWASP API Security Top 10 example application! Visit /docs for API documentation."
-    }
-
-
 # ---------------------------------------------------------------------------
 # API v1 router
 # ---------------------------------------------------------------------------
-app.include_router(api_v1_router, prefix=settings.api_prefix)
+app.include_router(api_v1_router, prefix=settings.api_v1_str)

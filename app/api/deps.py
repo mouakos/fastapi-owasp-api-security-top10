@@ -19,7 +19,7 @@ from app.services.item_service import ItemService
 from app.services.user_service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.api_prefix}/auth/token", scheme_name="Bearer", auto_error=False
+    tokenUrl=f"{settings.api_v1_str}/auth/token", scheme_name="Bearer", auto_error=False
 )
 
 

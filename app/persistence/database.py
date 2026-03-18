@@ -18,7 +18,16 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
-async def seed_admin() -> None:
+async def create_tables() -> None:
+    """Create database tables for all registered SQLModel models."""
+    # Import models so SQLModel metadata includes all mapped tables.
+    from app.persistence.models import Item, User  # noqa: F401
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+
+async def create_first_admin() -> None:
     """Create the first admin user from environment variables if not present.
 
     Reads FIRST_ADMIN_EMAIL, FIRST_ADMIN_USERNAME, and FIRST_ADMIN_PASSWORD
@@ -49,18 +58,9 @@ async def seed_admin() -> None:
         await session.commit()
 
 
-async def create_tables() -> None:
-    """Create database tables for all registered SQLModel models."""
-    # Import models so SQLModel metadata includes all mapped tables.
-    from app.persistence.models import Item, User  # noqa: F401
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-
-
 async def init_db() -> None:
     """Initialize the database by creating tables and seeding the first admin user."""
     # In production, you would typically run Alembic migrations instead of create_tables(),
     # but for development and testing, this can be a convenient way to ensure the schema is in place.
     # await create_tables()
-    await seed_admin()
+    await create_first_admin()
