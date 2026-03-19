@@ -1,5 +1,6 @@
 """Database session management for asynchronous SQLModel operations."""
 
+from password_validator import PasswordValidator
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -16,6 +17,11 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+schema = PasswordValidator()
+schema.min(8).max(
+    128
+).has().uppercase().has().lowercase().has().digits().has().no().spaces().has().symbols()
 
 
 async def create_tables() -> None:
@@ -48,10 +54,17 @@ async def create_first_admin() -> None:
         if existing:
             return
 
+        password = cfg.first_admin_password.get_secret_value()
+        if not schema.validate(password):
+            raise ValueError(
+                "First admin password does not meet complexity requirements: "
+                "must be 8-128 characters with uppercase, lowercase, digit, symbol, and no spaces."
+                "Example of a valid password: 'AdminPass1!'"
+            )
         admin = User(
             email=cfg.first_admin_email,
             username=cfg.first_admin_username,
-            hashed_password=hash_password(cfg.first_admin_password.get_secret_value()),
+            hashed_password=hash_password(password),
             role=UserRole.admin,
         )
         session.add(admin)
