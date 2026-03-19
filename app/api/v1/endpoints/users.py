@@ -19,6 +19,10 @@ async def get_me(current_user: CurrentUserDependency) -> User:
     return current_user
 
 
+# ---------------------------------------------------------------------------
+# API3: UserUpdate limits patchable fields to username only — role and
+#       is_active are intentionally excluded to prevent privilege escalation.
+# ---------------------------------------------------------------------------
 @router.patch("/me", response_model=UserResponse, summary="Update my profile")
 async def update_me(
     data: UserUpdate,

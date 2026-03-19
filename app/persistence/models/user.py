@@ -28,6 +28,7 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     username: str = Field(unique=True, index=True)
     hashed_password: str
+    # API5: role drives function-level access control throughout the application
     role: UserRole = Field(
         default=UserRole.user,
         sa_column=Column(

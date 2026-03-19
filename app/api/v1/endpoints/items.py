@@ -12,6 +12,13 @@ from app.persistence.models.item import Item
 router = APIRouter()
 
 
+# ---------------------------------------------------------------------------
+# API1: Every endpoint scopes reads and writes to the authenticated user's own
+#       items; owner enforcement is applied in ItemService for every operation.
+# API4: The list endpoint uses PaginationDependency to cap page size at 100.
+# ---------------------------------------------------------------------------
+
+
 @router.get("/", response_model=Page[ItemResponse], summary="List my items")
 async def list_my_items(
     current_user: CurrentUserDependency,

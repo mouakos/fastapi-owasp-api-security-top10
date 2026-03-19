@@ -14,6 +14,10 @@ from app.persistence.models.user import User
 router = APIRouter()
 
 
+# ---------------------------------------------------------------------------
+# API2: Rate-limited registration — prevents automated account creation.
+# API6: Protects the sensitive registration flow against abuse and enumeration.
+# ---------------------------------------------------------------------------
 @router.post(
     "/register",
     response_model=UserResponse,
@@ -31,6 +35,10 @@ async def register(
     return await user_service.create_user(data)
 
 
+# ---------------------------------------------------------------------------
+# API2: Rate-limited login with brute-force lockout enforced in UserService.
+# API6: Protects the authentication flow against credential-stuffing attacks.
+# ---------------------------------------------------------------------------
 @router.post(
     "/token", response_model=Token, summary="Authenticate a user and return an access token"
 )

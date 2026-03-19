@@ -19,6 +19,13 @@ from app.persistence.models.user import User
 router = APIRouter()
 
 
+# ---------------------------------------------------------------------------
+# API5: All endpoints are guarded by CurrentAdminUserDependency — only users
+#       with the admin role may reach any handler in this router.
+# API4: Paginated list endpoints use PaginationDependency to cap page size.
+# ---------------------------------------------------------------------------
+
+
 @router.get("/users", response_model=Page[UserResponse], summary="List all users")
 async def list_all_users(
     _: CurrentAdminUserDependency,

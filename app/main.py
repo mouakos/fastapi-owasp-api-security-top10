@@ -20,6 +20,8 @@ from app.core.logging import register_log_patcher, setup_logging
 
 # ---------------------------------------------------------------------------
 # Structured logging setup with Loguru.
+# API8: Structured, correlation-ID-enriched logging enables security monitoring
+#       and incident traceability across every request.
 # ---------------------------------------------------------------------------
 setup_logging(["uvicorn.access"])
 
@@ -74,17 +76,17 @@ app = FastAPI(
 #   → request_logging_middleware → security_headers_middleware
 # ---------------------------------------------------------------------------
 
-# 5 (innermost): Security headers — added to every response including 429s
+# 5 (innermost): API8: Security headers — added to every response including 429s
 app.middleware("http")(security_headers_middleware)
 
-# 4: Request logging — logs every non-rejected request with its correlation ID
+# 4: API8: Request logging — logs every non-rejected request with its correlation ID
 app.middleware("http")(request_logging_middleware)
 
-# 3: Rate limiting — rejects early before heavy processing
+# 3: API4: Rate limiting — rejects early to cap throughput and protect server resources
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
-# 2: Correlation ID — assigns X-Request-ID before rate limiting so even
+# 2: API8: Correlation ID — assigns X-Request-ID before rate limiting so even
 #    rejected requests carry a traceable ID
 app.add_middleware(CorrelationIdMiddleware)
 
@@ -125,6 +127,7 @@ app.add_middleware(
 register_exception_handlers(app)
 
 # ---------------------------------------------------------------------------
-# API v1 router
+# API9: Single versioned router mounted at /api/v1 — no shadow or legacy
+#       endpoints exist; the API surface is fully inventoried and controlled.
 # ---------------------------------------------------------------------------
 app.include_router(api_v1_router, prefix=settings.api_v1_str)

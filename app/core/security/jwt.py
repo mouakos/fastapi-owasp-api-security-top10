@@ -15,6 +15,10 @@ from app.core.config import settings
 from app.utils.time import utcnow
 
 
+# ---------------------------------------------------------------------------
+# API2: JWT creation — short-lived tokens signed with HS256; embeds expiry,
+#       issuer, and audience claims to prevent replay and cross-service misuse.
+# ---------------------------------------------------------------------------
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token.
 
@@ -39,6 +43,10 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
     )
 
 
+# ---------------------------------------------------------------------------
+# API2: JWT verification — validates signature, algorithm allow-list, expiry,
+#       issuer, and audience; rejects tampered or expired tokens.
+# ---------------------------------------------------------------------------
 def decode_token(token: str) -> dict[str, Any] | None:
     """Decode  and verify a JWT token.
 

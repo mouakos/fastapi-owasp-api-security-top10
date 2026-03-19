@@ -18,6 +18,9 @@ from app.persistence.uow.sqlmodel_uow import SqlModelUnitOfWork
 from app.services.item_service import ItemService
 from app.services.user_service import UserService
 
+# ---------------------------------------------------------------------------
+# API2: Bearer token scheme — extracts the JWT from the Authorization header.
+# ---------------------------------------------------------------------------
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.api_v1_str}/auth/token", scheme_name="Bearer", auto_error=False
 )
@@ -52,6 +55,10 @@ def get_item_service(uow: Annotated[UnitOfWorkBase, Depends(get_uow)]) -> ItemSe
     return ItemService(uow)
 
 
+# ---------------------------------------------------------------------------
+# API2: Token verification and active-user check applied to every protected
+#       endpoint — missing, invalid, or expired tokens are rejected here.
+# ---------------------------------------------------------------------------
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     uow: Annotated[UnitOfWorkBase, Depends(get_uow)],
@@ -100,6 +107,9 @@ async def get_current_user(
     return user
 
 
+# ---------------------------------------------------------------------------
+# API5: Function-level authorization — restricts access to admin role only.
+# ---------------------------------------------------------------------------
 def get_current_admin_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
@@ -119,6 +129,10 @@ def get_current_admin_user(
     return current_user
 
 
+# ---------------------------------------------------------------------------
+# API4: Pagination constraints — page size is capped at 100 to prevent
+#       unbounded queries that could exhaust server resources.
+# ---------------------------------------------------------------------------
 @dataclass
 class PaginationParams:
     """Reusable pagination query parameters.

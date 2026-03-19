@@ -29,7 +29,7 @@ class ItemService:
             title=data.title,
             description=data.description,
             price=data.price,
-            owner_id=owner_id,
+            owner_id=owner_id,  # API1: set server-side from the authenticated user, never from the request body
         )
         self._uow.items.add(new_item)
         await self._uow.commit()
@@ -50,6 +50,7 @@ class ItemService:
         if item is None:
             raise NotFoundError("Item", item_id)
 
+        # API1: Enforce object-level authorization — reject if item belongs to a different user
         if item.owner_id != owner_id:
             raise AuthorizationError("retrieve", "Item")
 
@@ -95,6 +96,7 @@ class ItemService:
         if item is None:
             raise NotFoundError("Item", item_id)
 
+        # API1: Enforce object-level authorization — reject update if item belongs to a different user
         if item.owner_id != owner_id:
             raise AuthorizationError("update", "Item")
 
@@ -118,6 +120,7 @@ class ItemService:
         if item is None:
             raise NotFoundError("Item", item_id)
 
+        # API1: Enforce object-level authorization — reject deletion if item belongs to a different user
         if item.owner_id != owner_id:
             raise AuthorizationError("delete", "Item")
 

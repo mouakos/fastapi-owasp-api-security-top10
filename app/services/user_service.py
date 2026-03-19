@@ -41,7 +41,9 @@ class UserService:
         new_user = User(
             username=data.username,
             email=data.email,
-            hashed_password=hash_password(data.password),
+            hashed_password=hash_password(
+                data.password
+            ),  # API2: password hashed with Argon2 before storage
         )
 
         self._uow.users.add(new_user)
@@ -66,6 +68,7 @@ class UserService:
         if user is None:
             user = await self._uow.users.find_by_username(identifier)
 
+        # API2: Check account lockout before verifying password to avoid leaking timing information
         # Check for account lockout before verifying password
         if user and user.locked_until and user.locked_until > utcnow():
             raise AuthenticationError(
@@ -74,6 +77,7 @@ class UserService:
 
         if user is None or not verify_password(password, user.hashed_password):
             if user:
+                # API2: Increment failed login counter and lock account after threshold (API6: brute-force mitigation)
                 # Increment failed login attempts and apply lockout if necessary
                 user.failed_login_attempts += 1
                 if user.failed_login_attempts >= settings.max_failed_login_attempts:
@@ -92,7 +96,7 @@ class UserService:
             user.locked_until = None
             await self._uow.commit()
 
-        access_token = create_access_token({"sub": str(user.id)})
+        access_token = create_access_token({"sub": str(user.id)})  # API2: subject is the user UUID
         return Token(access_token=access_token)
 
     async def get_user_by_id(self, user_id: UUID) -> User:
@@ -165,6 +169,7 @@ class UserService:
             NotFoundError: If no user with the given ID exists.
         """
         user = await self.get_user_by_id(user_id)
+        # API5: Admin-only operation — caller is validated as admin before reaching this method
         updated_user = await self._uow.users.update(user, **data.model_dump(exclude_unset=True))
         await self._uow.commit()
         return updated_user
