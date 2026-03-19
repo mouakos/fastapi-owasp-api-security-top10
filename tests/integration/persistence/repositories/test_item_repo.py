@@ -63,3 +63,29 @@ class TestItemRepository:
 
         found = await uow.items.find_by_id(item.id)
         assert found is None
+
+    async def test_find_one_by_owner(self, uow: SqlModelUnitOfWork, owner: User) -> None:
+        item = Item(title="Find One", price=3.0, owner_id=owner.id)
+        uow.items.add(item)
+        await uow.commit()
+
+        found = await uow.items.find_one(owner_id=owner.id)
+        assert found is not None
+        assert found.owner_id == owner.id
+
+    async def test_find_one_returns_none_when_no_match(self, uow: SqlModelUnitOfWork) -> None:
+        found = await uow.items.find_one(owner_id=uuid4())
+        assert found is None
+
+    async def test_delete_nonexistent_does_nothing(self, uow: SqlModelUnitOfWork) -> None:
+        await uow.items.delete(uuid4())  # must not raise
+
+    async def test_exists_returns_true(self, uow: SqlModelUnitOfWork, owner: User) -> None:
+        item = Item(title="Exists", price=1.0, owner_id=owner.id)
+        uow.items.add(item)
+        await uow.commit()
+
+        assert await uow.items.exists(item.id) is True
+
+    async def test_exists_returns_false(self, uow: SqlModelUnitOfWork) -> None:
+        assert await uow.items.exists(uuid4()) is False

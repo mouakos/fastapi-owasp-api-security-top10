@@ -139,3 +139,58 @@ class TestDeleteItem:
 
         response = await client.delete(f"/api/v1/items/{item_id}", headers=b_headers)
         assert response.status_code in (403, 404)
+
+
+class TestUpdateItem:
+    async def test_requires_auth(self, client: AsyncClient) -> None:
+        response = await client.patch(f"/api/v1/items/{uuid4()}", json={"title": "New"})
+        assert response.status_code == 401
+
+    async def test_updates_own_item(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        created = await client.post("/api/v1/items/", json=ITEM_PAYLOAD, headers=auth_headers)
+        item_id = created.json()["id"]
+
+        response = await client.patch(
+            f"/api/v1/items/{item_id}",
+            json={"title": "Updated Title"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["title"] == "Updated Title"
+
+    async def test_cannot_update_other_users_item(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """OWASP API1: BOLA — user cannot update another user's item."""
+        created = await client.post("/api/v1/items/", json=ITEM_PAYLOAD, headers=auth_headers)
+        item_id = created.json()["id"]
+
+        suffix = uuid4().hex[:8]
+        await client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": f"b_{suffix}@example.com",
+                "username": f"b_{suffix}",
+                "password": "Password1!",
+            },
+        )
+        token_resp = await client.post(
+            "/api/v1/auth/token",
+            data={"username": f"b_{suffix}@example.com", "password": "Password1!"},
+        )
+        b_headers: dict[str, str] = {"Authorization": f"Bearer {token_resp.json()['access_token']}"}
+
+        response = await client.patch(
+            f"/api/v1/items/{item_id}", json={"title": "Stolen"}, headers=b_headers
+        )
+        assert response.status_code in (403, 404)
+
+    async def test_update_nonexistent_item_returns_404(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        response = await client.patch(
+            f"/api/v1/items/{uuid4()}", json={"title": "Ghost"}, headers=auth_headers
+        )
+        assert response.status_code == 404

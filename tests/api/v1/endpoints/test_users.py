@@ -3,6 +3,8 @@
 from uuid import uuid4
 
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 class TestGetMe:
@@ -62,3 +64,46 @@ class TestUpdateMe:
         # Either 422 (field rejected) or 200 with role unchanged
         if response.status_code == 200:
             assert response.json()["role"] != "admin"
+
+
+class TestTokenSecurity:
+    async def test_token_for_nonexistent_user_returns_401(self, client: AsyncClient) -> None:
+        """Token with a valid UUID that doesn't exist in DB should be rejected."""
+        from app.core.security.jwt import create_access_token
+
+        token = create_access_token({"sub": str(uuid4())})
+        response = await client.get(
+            "/api/v1/users/me", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert response.status_code == 401
+
+    async def test_token_for_inactive_user_returns_401(
+        self,
+        client: AsyncClient,
+        registered_user: dict[str, str],
+        admin_auth_headers: dict[str, str],
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        """A valid token for a deactivated user must be rejected."""
+        # Login to get the user's token
+        login = await client.post(
+            "/api/v1/auth/token",
+            data={"username": registered_user["email"], "password": registered_user["password"]},
+        )
+        token = login.json()["access_token"]
+        user_headers = {"Authorization": f"Bearer {token}"}
+
+        # Get the user ID
+        me = await client.get("/api/v1/users/me", headers=user_headers)
+        user_id = me.json()["id"]
+
+        # Admin deactivates the user
+        await client.patch(
+            f"/api/v1/admin/users/{user_id}",
+            json={"is_active": False},
+            headers=admin_auth_headers,
+        )
+
+        # Old token should now be rejected
+        response = await client.get("/api/v1/users/me", headers=user_headers)
+        assert response.status_code == 401

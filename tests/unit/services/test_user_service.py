@@ -6,9 +6,9 @@ from uuid import uuid4
 
 import pytest
 
-from app.api.v1.schemas.user import UserCreate
+from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
 from app.core.config import settings
-from app.core.exceptions import AuthenticationError, ConflictError
+from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.core.security.password import hash_password
 from app.persistence.models.user import User
 from app.services.user_service import UserService
@@ -182,3 +182,139 @@ class TestAuthenticateUser:
         token = await service.authenticate_user("testuser", "Password1!")
 
         assert token.access_token
+
+
+class TestAuthenticateUserInactive:
+    async def test_raises_when_account_is_inactive(self, mock_uow: AsyncMock) -> None:
+        user = User(
+            id=uuid4(),
+            email="test@example.com",
+            username="testuser",
+            hashed_password=hash_password("Password1!"),
+            is_active=False,
+        )
+        mock_uow.users.find_by_email = AsyncMock(return_value=user)
+
+        service = UserService(mock_uow)
+        with pytest.raises(AuthenticationError):
+            await service.authenticate_user("test@example.com", "Password1!")
+
+
+class TestGetUserById:
+    async def test_returns_user_when_found(self, mock_uow: AsyncMock) -> None:
+        user_id = uuid4()
+        user = User(id=user_id, email="test@example.com", username="testuser", hashed_password="x")
+        mock_uow.users.find_by_id = AsyncMock(return_value=user)
+
+        service = UserService(mock_uow)
+        result = await service.get_user_by_id(user_id)
+
+        assert result == user
+
+    async def test_raises_not_found_when_missing(self, mock_uow: AsyncMock) -> None:
+        mock_uow.users.find_by_id = AsyncMock(return_value=None)
+
+        service = UserService(mock_uow)
+        with pytest.raises(NotFoundError):
+            await service.get_user_by_id(uuid4())
+
+
+class TestUpdateUser:
+    async def test_updates_username_successfully(self, mock_uow: AsyncMock) -> None:
+        user_id = uuid4()
+        user = User(id=user_id, email="test@example.com", username="old", hashed_password="x")
+        updated = User(
+            id=user_id, email="test@example.com", username="newname", hashed_password="x"
+        )
+        mock_uow.users.find_by_id = AsyncMock(return_value=user)
+        mock_uow.users.find_by_username = AsyncMock(return_value=None)
+        mock_uow.users.update = AsyncMock(return_value=updated)
+        mock_uow.commit = AsyncMock()
+
+        service = UserService(mock_uow)
+        result = await service.update_user(user_id, UserUpdate(username="newname"))
+
+        assert result.username == "newname"
+        mock_uow.commit.assert_awaited_once()
+
+    async def test_raises_not_found_when_user_missing(self, mock_uow: AsyncMock) -> None:
+        mock_uow.users.find_by_id = AsyncMock(return_value=None)
+
+        service = UserService(mock_uow)
+        with pytest.raises(NotFoundError):
+            await service.update_user(uuid4(), UserUpdate(username="newname"))
+
+    async def test_returns_unchanged_user_when_username_is_none(self, mock_uow: AsyncMock) -> None:
+        user_id = uuid4()
+        user = User(id=user_id, email="test@example.com", username="old", hashed_password="x")
+        mock_uow.users.find_by_id = AsyncMock(return_value=user)
+
+        service = UserService(mock_uow)
+        result = await service.update_user(user_id, UserUpdate(username=None))
+
+        assert result == user
+        mock_uow.users.update.assert_not_called()
+
+    async def test_raises_conflict_when_username_taken_by_other_user(
+        self, mock_uow: AsyncMock
+    ) -> None:
+        user_id = uuid4()
+        user = User(id=user_id, email="test@example.com", username="old", hashed_password="x")
+        other = User(id=uuid4(), email="other@example.com", username="taken", hashed_password="x")
+        mock_uow.users.find_by_id = AsyncMock(return_value=user)
+        mock_uow.users.find_by_username = AsyncMock(return_value=other)
+
+        service = UserService(mock_uow)
+        with pytest.raises(ConflictError):
+            await service.update_user(user_id, UserUpdate(username="taken"))
+
+
+class TestListUsers:
+    async def test_returns_users_and_total(self, mock_uow: AsyncMock) -> None:
+        users = [User(email="a@example.com", username="a", hashed_password="x")]
+        mock_uow.users.find_all = AsyncMock(return_value=users)
+        mock_uow.users.count = AsyncMock(return_value=1)
+
+        service = UserService(mock_uow)
+        result, total = await service.list_users()
+
+        assert result == users
+        assert total == 1
+
+    async def test_passes_skip_and_limit(self, mock_uow: AsyncMock) -> None:
+        mock_uow.users.find_all = AsyncMock(return_value=[])
+        mock_uow.users.count = AsyncMock(return_value=0)
+
+        service = UserService(mock_uow)
+        await service.list_users(skip=10, limit=5)
+
+        mock_uow.users.find_all.assert_awaited_once_with(skip=10, limit=5)
+
+
+class TestAdminUpdateUser:
+    async def test_updates_user_fields(self, mock_uow: AsyncMock) -> None:
+        user_id = uuid4()
+        user = User(id=user_id, email="test@example.com", username="testuser", hashed_password="x")
+        updated = User(
+            id=user_id,
+            email="test@example.com",
+            username="testuser",
+            hashed_password="x",
+            is_active=False,
+        )
+        mock_uow.users.find_by_id = AsyncMock(return_value=user)
+        mock_uow.users.update = AsyncMock(return_value=updated)
+        mock_uow.commit = AsyncMock()
+
+        service = UserService(mock_uow)
+        result = await service.admin_update_user(user_id, UserAdminUpdate(is_active=False))
+
+        assert result == updated
+        mock_uow.commit.assert_awaited_once()
+
+    async def test_raises_not_found_when_user_missing(self, mock_uow: AsyncMock) -> None:
+        mock_uow.users.find_by_id = AsyncMock(return_value=None)
+
+        service = UserService(mock_uow)
+        with pytest.raises(NotFoundError):
+            await service.admin_update_user(uuid4(), UserAdminUpdate(is_active=False))

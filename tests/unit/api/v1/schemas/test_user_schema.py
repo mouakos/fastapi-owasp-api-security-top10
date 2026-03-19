@@ -56,3 +56,10 @@ class TestUserUpdate:
     def test_empty_payload_is_allowed(self) -> None:
         update = UserUpdate()
         assert update.username is None
+
+    def test_invalid_username_raises(self) -> None:
+        import pytest
+        from pydantic import ValidationError as PydanticValidationError
+
+        with pytest.raises(PydanticValidationError):
+            UserUpdate(username="bad name!")

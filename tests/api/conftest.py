@@ -58,3 +58,37 @@ async def auth_headers(client: AsyncClient, registered_user: dict[str, str]) -> 
     assert response.status_code == 200
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def admin_auth_headers(
+    client: AsyncClient, session_factory: async_sessionmaker[AsyncSession]
+) -> dict[str, str]:
+    """Register a user, promote them to admin directly in the DB, then return auth headers."""
+    from uuid import uuid4
+
+    from app.core.security.password import hash_password
+    from app.persistence.models.user import User, UserRole
+
+    suffix = uuid4().hex[:8]
+    email = f"admin_{suffix}@example.com"
+    username = f"admin_{suffix}"
+    password = "Password1!"
+
+    async with session_factory() as session:
+        admin = User(
+            email=email,
+            username=username,
+            hashed_password=hash_password(password),
+            role=UserRole.admin,
+        )
+        session.add(admin)
+        await session.commit()
+
+    response = await client.post(
+        "/api/v1/auth/token",
+        data={"username": email, "password": password},
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

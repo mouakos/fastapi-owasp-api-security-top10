@@ -91,3 +91,30 @@ class TestLogin:
             data={"username": "ghost@example.com", "password": "Password1!"},
         )
         assert response.status_code == 401
+
+
+class TestExceptionHandlers:
+    async def test_unknown_route_returns_404(self, client: AsyncClient) -> None:
+        """FastAPI raises HTTPException(404) for unknown routes — exercises http_exception_handler."""
+        response = await client.get("/api/v1/does-not-exist")
+        assert response.status_code == 404
+
+    async def test_method_not_allowed_returns_405(self, client: AsyncClient) -> None:
+        """FastAPI raises HTTPException(405) for wrong HTTP method — exercises http_exception_handler."""
+        response = await client.delete("/api/v1/auth/register")
+        assert response.status_code == 405
+
+    async def test_missing_token_returns_401(self, client: AsyncClient) -> None:
+        """No Authorization header at all — exercises AuthenticationError path in get_current_user."""
+        response = await client.get("/api/v1/users/me")
+        assert response.status_code == 401
+
+    async def test_token_with_non_uuid_sub_returns_401(self, client: AsyncClient) -> None:
+        """JWT with a valid string but non-UUID sub — exercises UUID parse failure in get_current_user."""
+        from app.core.security.jwt import create_access_token
+
+        token = create_access_token({"sub": "not-a-uuid-string"})
+        response = await client.get(
+            "/api/v1/users/me", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert response.status_code == 401
