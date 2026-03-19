@@ -11,9 +11,9 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     api_v1_str: str = "/api/v1"
-    allowed_origins: str = "http://localhost:3000,http://localhost:8080"
+    allowed_origins: str = ""
 
-    secret_key: SecretStr = SecretStr("supersecretkey")
+    secret_key: SecretStr
     access_token_expire_minutes: int = 30
     algorithm: str = "HS256"
     jwt_issuer: str = "fastapi-owasp-app"
@@ -23,21 +23,21 @@ class Settings(BaseSettings):
     log_to_file: bool = False
     log_serialized: bool = False
 
-    first_admin_email: EmailStr = "admin@example.com"
-    first_admin_username: str = "admin"
-    first_admin_password: SecretStr = SecretStr("admin")
+    first_admin_email: EmailStr
+    first_admin_username: str
+    first_admin_password: SecretStr
 
     max_failed_login_attempts: int = 5
     lockout_duration_minutes: int = 5
 
     @property
-    def allowed_origins_list(self) -> list[AnyHttpUrl]:
-        """Return the allowed origins as a list of URLs."""
-        return [AnyHttpUrl(origin.strip()) for origin in self.allowed_origins.split(",")]
+    def allowed_origins_list(self) -> list[str]:
+        """Return the allowed origins as a list of URL strings."""
+        return [str(AnyHttpUrl(origin.strip())) for origin in self.allowed_origins.split(",")]
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
