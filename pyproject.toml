@@ -53,6 +53,7 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["D104","F401"]
+"tests/**/*.py" = ["D", "ANN", "ARG"]
 
 
 [tool.mypy]
