@@ -66,24 +66,26 @@ app = FastAPI(
     },
 )
 # ---------------------------------------------------------------------------
-# API4: Attach rate limiter middleware to enforce rate limits on endpoints.
+# Middleware registration — Starlette executes in REVERSE order, so the last
+# middleware registered here is the outermost (runs first on every request).
+#
+# Actual execution order (outermost → innermost):
+#   CORSMiddleware → CorrelationIdMiddleware → SlowAPIMiddleware
+#   → request_logging_middleware → security_headers_middleware
 # ---------------------------------------------------------------------------
+
+# 5 (innermost): Security headers — added to every response including 429s
+app.middleware("http")(security_headers_middleware)
+
+# 4: Request logging — logs every non-rejected request with its correlation ID
+app.middleware("http")(request_logging_middleware)
+
+# 3: Rate limiting — rejects early before heavy processing
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
-# ---------------------------------------------------------------------------
-# API8: Security headers on every response
-# ---------------------------------------------------------------------------
-app.middleware("http")(security_headers_middleware)
-
-# ---------------------------------------------------------------------------
-# API8: Request logging middleware to log all incoming requests and responses.
-# ---------------------------------------------------------------------------
-app.middleware("http")(request_logging_middleware)
-
-# ---------------------------------------------------------------------------
-# API8: Correlation ID middleware to trace requests across logs and services.
-# ---------------------------------------------------------------------------
+# 2: Correlation ID — assigns X-Request-ID before rate limiting so even
+#    rejected requests carry a traceable ID
 app.add_middleware(CorrelationIdMiddleware)
 
 
