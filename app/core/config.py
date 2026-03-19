@@ -1,6 +1,6 @@
 """Configuration settings for the FastAPI app."""
 
-from pydantic import EmailStr, SecretStr
+from pydantic import AnyHttpUrl, EmailStr, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     api_v1_str: str = "/api/v1"
-    allowed_origins: str = "http://localhost,http://localhost:3000"
+    allowed_origins: str = "http://localhost:3000,http://localhost:8080"
 
     secret_key: SecretStr = SecretStr("supersecretkey")
     access_token_expire_minutes: int = 30
@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     lockout_duration_minutes: int = 5
 
     @property
-    def allowed_origins_list(self) -> list[str]:
-        """Return the allowed origins as a list of strings."""
-        return [origin.strip() for origin in self.allowed_origins.split(",")]
+    def allowed_origins_list(self) -> list[AnyHttpUrl]:
+        """Return the allowed origins as a list of URLs."""
+        return [AnyHttpUrl(origin.strip()) for origin in self.allowed_origins.split(",")]
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
