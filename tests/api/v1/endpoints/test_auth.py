@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 
 def unique_user() -> dict[str, str]:
@@ -118,3 +118,54 @@ class TestExceptionHandlers:
             "/api/v1/users/me", headers={"Authorization": f"Bearer {token}"}
         )
         assert response.status_code == 401
+
+
+class TestRateLimiting:
+    async def test_register_rate_limit_returns_429(self, session_factory: object) -> None:
+        """After 10 requests to /auth/register the 11th returns 429 (OWASP API4)."""
+
+        from app.api.deps import get_uow
+        from app.main import app
+        from app.persistence.uow.sqlmodel_uow import SqlModelUnitOfWork
+
+        _session_factory = session_factory
+
+        async def override_get_uow():
+            _uow = SqlModelUnitOfWork(_session_factory)
+            async with _uow:
+                yield _uow
+
+        app.dependency_overrides[get_uow] = override_get_uow
+        app.state.limiter.enabled = True
+        # Reset in-memory counter so previous tests don't pollute the count
+        app.state.limiter._storage.reset()
+
+        try:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+                from uuid import uuid4
+
+                for _ in range(10):
+                    suffix = uuid4().hex[:8]
+                    await ac.post(
+                        "/api/v1/auth/register",
+                        json={
+                            "email": f"rl_{suffix}@example.com",
+                            "username": f"rl_{suffix}",
+                            "password": "Password1!",
+                        },
+                    )
+
+                # 11th request must be rate-limited
+                response = await ac.post(
+                    "/api/v1/auth/register",
+                    json={
+                        "email": "rl_extra@example.com",
+                        "username": "rl_extra",
+                        "password": "Password1!",
+                    },
+                )
+                assert response.status_code == 429
+        finally:
+            app.state.limiter.enabled = False
+            app.state.limiter._storage.reset()
+            app.dependency_overrides.clear()
