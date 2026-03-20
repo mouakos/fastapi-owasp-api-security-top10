@@ -1,15 +1,34 @@
 """Database session management for asynchronous SQLModel operations."""
 
-from password_validator import PasswordValidator
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.pool import StaticPool
 
 from app.core.config import settings
 
+
+def _engine_kwargs() -> dict[str, object]:
+    """Determine appropriate engine kwargs based on the database URL scheme."""
+    if settings.database_url.startswith("sqlite+aiosqlite://"):
+        return {
+            "connect_args": {"check_same_thread": False},
+            "poolclass": StaticPool,
+        }
+    return {
+        "pool_pre_ping": True,  # enable connection health checks to automatically recycle stale connections, improving reliability in production environments
+        "pool_size": 10,  # maintain a pool of 10 connections for efficient reuse under load, while allowing up to 20 additional connections during spikes with max_overflow
+        "max_overflow": 20,  # allow up to 20 additional connections beyond the pool_size during high load
+        "pool_timeout": 30,  # seconds to wait for a connection before raising an error
+        "pool_recycle": 1800,  # recycle connections after 30 minutes to prevent stale connections in production environments
+    }
+
+
 async_engine = create_async_engine(
     url=settings.database_url,
-    echo=False,
+    echo=settings.environment
+    == "development",  # enable SQL query logging in development for debugging, disable in production for performance
+    **_engine_kwargs(),
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -17,11 +36,6 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-schema = PasswordValidator()
-schema.min(8).max(
-    128
-).has().uppercase().has().lowercase().has().digits().has().no().spaces().has().symbols()
 
 
 async def create_tables() -> None:
@@ -40,7 +54,7 @@ async def create_first_admin() -> None:
     from the environment (via Settings). Skips silently when any value is
     empty or an account with that email already exists.
     """
-    from app.core.security.password import hash_password
+    from app.core.security.password import hash_password, validate_password_complexity
     from app.persistence.models.user import User, UserRole
 
     cfg = settings
@@ -55,7 +69,7 @@ async def create_first_admin() -> None:
             return
 
         password = cfg.first_admin_password.get_secret_value()
-        if not schema.validate(password):
+        if not validate_password_complexity(password):
             raise ValueError(
                 "First admin password does not meet complexity requirements: "
                 "must be 8-128 characters with uppercase, lowercase, digit, symbol, and no spaces."

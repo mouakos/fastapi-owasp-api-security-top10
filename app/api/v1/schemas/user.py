@@ -58,16 +58,14 @@ class UserCreate(BaseModel):
         Raises:
             ValueError: If the password fails any strength requirement.
         """
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not re.search(r"[0-9]", v):
-            raise ValueError("Password must contain at least one digit")
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
-            raise ValueError("Password must contain at least one symbol")
-        if re.search(r"\s", v):
-            raise ValueError("Password must not contain spaces")
+        from app.core.security.password import validate_password_complexity
+
+        if not validate_password_complexity(v):
+            raise ValueError(
+                "Password does not meet complexity requirements: "
+                "must be 8-128 characters with uppercase, lowercase, digit, symbol, and no spaces."
+                "Example of a valid password: 'StrongPass1!'"
+            )
         return v
 
 
