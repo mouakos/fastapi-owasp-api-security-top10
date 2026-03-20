@@ -7,6 +7,8 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 from fastapi.security import OAuth2PasswordBearer
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, AuthorizationError
@@ -17,6 +19,13 @@ from app.persistence.uow.base import UnitOfWorkBase
 from app.persistence.uow.sqlmodel_uow import SqlModelUnitOfWork
 from app.services.item_service import ItemService
 from app.services.user_service import UserService
+
+# ---------------------------------------------------------------------------
+# API1: Rate limiting middleware with SlowAPI — protects against brute-force
+#       attacks and abuse by limiting the number of requests per IP address.
+# ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/hour"], headers_enabled=True)
+
 
 # ---------------------------------------------------------------------------
 # API2: Bearer token scheme — extracts the JWT from the Authorization header.
