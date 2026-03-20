@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
+from content_size_limit_asgi import ContentSizeLimitMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
@@ -72,22 +73,26 @@ app = FastAPI(
 # middleware registered here is the outermost (runs first on every request).
 #
 # Actual execution order (outermost → innermost):
-#   CORSMiddleware → CorrelationIdMiddleware → SlowAPIMiddleware
-#   → request_logging_middleware → security_headers_middleware
+#   CORSMiddleware → CorrelationIdMiddleware → ContentSizeLimitMiddleware
+#   → SlowAPIMiddleware → request_logging_middleware → security_headers_middleware
 # ---------------------------------------------------------------------------
 
-# 5 (innermost): API8: Security headers — added to every response including 429s
+# 6 (innermost): API8: Security headers — added to every response including 429s
 app.middleware("http")(security_headers_middleware)
 
-# 4: API8: Request logging — logs every non-rejected request with its correlation ID
+# 5: API8: Request logging — logs every non-rejected request with its correlation ID
 app.middleware("http")(request_logging_middleware)
 
-# 3: API4: Rate limiting — rejects early to cap throughput and protect server resources
+# 4: API4: Rate limiting — rejects early to cap throughput and protect server resources
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
-# 2: API8: Correlation ID — assigns X-Request-ID before rate limiting so even
-#    rejected requests carry a traceable ID
+# 3: API4: Body size limit — reject oversized payloads before they hit the rate limiter.
+#    Correlation ID is already assigned at this point so rejections are traceable.
+app.add_middleware(ContentSizeLimitMiddleware, max_content_size=settings.max_request_body_size)
+
+# 2: API8: Correlation ID — assigns X-Request-ID to every request, including
+#    requests rejected by ContentSizeLimitMiddleware or SlowAPIMiddleware.
 app.add_middleware(CorrelationIdMiddleware)
 
 
@@ -118,6 +123,7 @@ app.add_middleware(
         "X-RateLimit-Reset",
         "Retry-After",
     ],
+    max_age=3600,
 )
 
 # ---------------------------------------------------------------------------

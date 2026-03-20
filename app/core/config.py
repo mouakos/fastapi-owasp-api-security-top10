@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     max_failed_login_attempts: int = 5
     lockout_duration_minutes: int = 5
 
+    max_request_body_size: int = 1_048_576
+
     @property
     def allowed_origins_list(self) -> list[str]:
         """Return the allowed origins as a list of URL strings."""

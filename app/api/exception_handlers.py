@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from asgi_correlation_id import correlation_id
+from content_size_limit_asgi.errors import ContentSizeExceeded
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -202,6 +203,22 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             error_code="TOO_MANY_REQUESTS",
             message=exc.detail,
+        )
+
+    @app.exception_handler(ContentSizeExceeded)
+    async def content_size_exceeded_handler(_: Request, exc: ContentSizeExceeded) -> JSONResponse:  # type: ignore [no-any-unimported]
+        """Handle request body size limit exceeded errors."""
+        log_error(
+            error_code="PAYLOAD_TOO_LARGE",
+            status_code=413,
+            message=str(exc),
+            event="content_size_exceeded",
+            level="WARNING",
+        )
+        return build_response(
+            status_code=413,
+            error_code="PAYLOAD_TOO_LARGE",
+            message="Request body is too large. Please reduce the size and try again.",
         )
 
     @app.exception_handler(SQLAlchemyError)

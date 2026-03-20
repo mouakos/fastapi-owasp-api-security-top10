@@ -232,6 +232,15 @@ wheels = [
 ]
 
 [[package]]
+name = "content-size-limit-asgi"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/5b/54a62053480a2cc3e17e441bfe15c5732028a328b6d5063d46e93a38dbdc/content_size_limit_asgi-0.1.5.tar.gz", hash = "sha256:a6a2511c72e0c808b95fbe3cbfa9cdf15d39bbd30151796e04908f9f2a651767", size = 4723, upload-time = "2020-11-27T12:28:39.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/bb/45f8b005b1cecf99ef46d2450eadaecaf3f65650b9fbdcf674c8c8c77bca/content_size_limit_asgi-0.1.5-py3-none-any.whl", hash = "sha256:0cf3b66b15f8bc4b37f01966b9d3b9b3b3056f7d08804dc0e3662c6cdc461d16", size = 4812, upload-time = "2020-11-27T12:28:38.746Z" },
+]
+
+[[package]]
 name = "coverage"
 version = "7.13.5"
 source = { registry = "https://pypi.org/simple" }
@@ -419,6 +428,7 @@ dependencies = [
     { name = "alembic" },
     { name = "asgi-correlation-id" },
     { name = "asyncpg" },
+    { name = "content-size-limit-asgi" },
     { name = "fastapi", extra = ["standard"] },
     { name = "httpx" },
     { name = "loguru" },
@@ -447,6 +457,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "asgi-correlation-id", specifier = ">=4.3.4" },
     { name = "asyncpg", specifier = ">=0.31.0" },
+    { name = "content-size-limit-asgi", specifier = ">=0.1.5" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.135.1" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "loguru", specifier = ">=0.7.3" },
