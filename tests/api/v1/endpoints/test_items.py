@@ -1,7 +1,9 @@
 """API tests for /items endpoints (OWASP API1: BOLA enforcement)."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import httpx
 from httpx import AsyncClient
 
 ITEM_PAYLOAD: dict[str, object] = {"title": "My Item", "price": 9.99}
@@ -194,3 +196,144 @@ class TestUpdateItem:
             f"/api/v1/items/{uuid4()}", json={"title": "Ghost"}, headers=auth_headers
         )
         assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Helper — build a mock httpx.AsyncClient that returns a canned response body
+# ---------------------------------------------------------------------------
+
+
+def _mock_httpx_client(json_data: dict, status_code: int = 200) -> MagicMock:
+    response = MagicMock(spec=httpx.Response)
+    response.status_code = status_code
+    response.content = b"x"  # within size limit
+    response.json.return_value = json_data
+    if status_code >= 400:
+        response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            message=f"HTTP {status_code}", request=MagicMock(), response=response
+        )
+    else:
+        response.raise_for_status.return_value = None
+    mock_client = AsyncMock()
+    mock_client.request = AsyncMock(return_value=response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    return mock_client
+
+
+_EXTERNAL_ITEM = {"title": "External Widget", "description": "From upstream", "price": 4.99}
+_IMPORT_URL = "https://example.com/item.json"
+
+
+class TestImportItem:
+    """POST /items/import — API7 (SSRF) + API10 (safe consumption) + API1 (ownership)."""
+
+    async def test_requires_auth(self, client: AsyncClient) -> None:
+        response = await client.post("/api/v1/items/import", json={"url": _IMPORT_URL})
+        assert response.status_code == 401
+
+    async def test_successful_import_creates_item(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        with patch("httpx.AsyncClient", return_value=_mock_httpx_client(_EXTERNAL_ITEM)):
+            response = await client.post(
+                "/api/v1/items/import", json={"url": _IMPORT_URL}, headers=auth_headers
+            )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["title"] == _EXTERNAL_ITEM["title"]
+        assert data["price"] == _EXTERNAL_ITEM["price"]
+
+    async def test_owner_is_authenticated_user_not_from_payload(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API1: owner_id must come from the JWT, never from the external payload."""
+        poisoned = {**_EXTERNAL_ITEM, "owner_id": str(uuid4())}
+        with patch("httpx.AsyncClient", return_value=_mock_httpx_client(poisoned)):
+            response = await client.post(
+                "/api/v1/items/import", json={"url": _IMPORT_URL}, headers=auth_headers
+            )
+        assert response.status_code == 201
+        # owner_id in the response must be the real authenticated user, not the injected value
+        assert response.json()["owner_id"] != poisoned["owner_id"]
+
+    async def test_private_ip_url_is_rejected(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API7: SSRF — requests targeting private IP ranges must be blocked."""
+        response = await client.post(
+            "/api/v1/items/import",
+            json={"url": "http://192.168.1.1/secret"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+    async def test_localhost_url_is_rejected(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API7: SSRF — localhost must be blocked by hostname check."""
+        response = await client.post(
+            "/api/v1/items/import",
+            json={"url": "http://localhost/internal"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+    async def test_metadata_endpoint_is_rejected(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API7: SSRF — cloud metadata endpoint must be blocked."""
+        response = await client.post(
+            "/api/v1/items/import",
+            json={"url": "http://169.254.169.254/latest/meta-data/"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+    async def test_non_http_scheme_is_rejected(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API7: SSRF — file:// scheme must be blocked."""
+        response = await client.post(
+            "/api/v1/items/import",
+            json={"url": "file:///etc/passwd"},
+            headers=auth_headers,
+        )
+        # Pydantic HttpUrl rejects non-http(s) before our validator even runs
+        assert response.status_code == 422
+
+    async def test_upstream_5xx_returns_502(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API10: Non-2xx upstream response surfaces as 502."""
+        with patch("httpx.AsyncClient", return_value=_mock_httpx_client({}, status_code=500)):
+            response = await client.post(
+                "/api/v1/items/import", json={"url": _IMPORT_URL}, headers=auth_headers
+            )
+        assert response.status_code == 502
+
+    async def test_upstream_timeout_returns_504(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API10: Upstream timeout surfaces as 504."""
+        mock_client = AsyncMock()
+        mock_client.request = AsyncMock(side_effect=httpx.TimeoutException("timeout"))
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            response = await client.post(
+                "/api/v1/items/import", json={"url": _IMPORT_URL}, headers=auth_headers
+            )
+        assert response.status_code == 504
+
+    async def test_upstream_invalid_schema_returns_502(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        """API10: Response missing required fields is rejected and returns 502."""
+        with patch(
+            "httpx.AsyncClient", return_value=_mock_httpx_client({"title": "No price here"})
+        ):
+            response = await client.post(
+                "/api/v1/items/import", json={"url": _IMPORT_URL}, headers=auth_headers
+            )
+        assert response.status_code == 502
