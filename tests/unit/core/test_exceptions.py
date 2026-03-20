@@ -3,9 +3,11 @@
 from app.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
+    BadGatewayError,
     ConflictError,
-    ExternalServiceError,
+    GatewayTimeoutError,
     NotFoundError,
+    ServiceUnavailableError,
     ValidationError,
 )
 
@@ -57,14 +59,40 @@ def test_conflict_error_custom_message() -> None:
     assert err.message == "email already in use"
 
 
-def test_external_service_error_default_message() -> None:
-    err = ExternalServiceError("PaymentAPI")
+def test_service_unavailable_error_default_message() -> None:
+    err = ServiceUnavailableError("PaymentAPI")
     assert err.status_code == 503
     assert err.error_code == "SERVICE_UNAVAILABLE"
     assert "PaymentAPI" in err.message
     assert err.details["service"] == "PaymentAPI"
 
 
-def test_external_service_error_custom_message() -> None:
-    err = ExternalServiceError("EmailService", message="timeout")
-    assert err.message == "timeout"
+def test_service_unavailable_error_custom_message() -> None:
+    err = ServiceUnavailableError("EmailService", message="temporarily down")
+    assert err.message == "temporarily down"
+
+
+def test_bad_gateway_error_default_message() -> None:
+    err = BadGatewayError("InventoryAPI")
+    assert err.status_code == 502
+    assert err.error_code == "BAD_GATEWAY"
+    assert "InventoryAPI" in err.message
+    assert err.details["service"] == "InventoryAPI"
+
+
+def test_bad_gateway_error_custom_message() -> None:
+    err = BadGatewayError("InventoryAPI", message="invalid response")
+    assert err.message == "invalid response"
+
+
+def test_gateway_timeout_error_default_message() -> None:
+    err = GatewayTimeoutError("ShippingAPI")
+    assert err.status_code == 504
+    assert err.error_code == "GATEWAY_TIMEOUT"
+    assert "ShippingAPI" in err.message
+    assert err.details["service"] == "ShippingAPI"
+
+
+def test_gateway_timeout_error_custom_message() -> None:
+    err = GatewayTimeoutError("ShippingAPI", message="timed out after 30s")
+    assert err.message == "timed out after 30s"
