@@ -3,8 +3,6 @@
 from uuid import uuid4
 
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 class TestGetMe:
@@ -82,7 +80,6 @@ class TestTokenSecurity:
         client: AsyncClient,
         registered_user: dict[str, str],
         admin_auth_headers: dict[str, str],
-        session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
         """A valid token for a deactivated user must be rejected."""
         # Login to get the user's token
@@ -107,3 +104,57 @@ class TestTokenSecurity:
         # Old token should now be rejected
         response = await client.get("/api/v1/users/me", headers=user_headers)
         assert response.status_code == 401
+
+
+class TestChangePassword:
+    async def test_change_password_requires_auth(self, client: AsyncClient) -> None:
+        response = await client.patch(
+            "/api/v1/users/me/password", json={"current_password": "x", "new_password": "y"}
+        )
+        assert response.status_code == 401
+
+    async def test_change_password_succeeds(
+        self, client: AsyncClient, auth_headers: dict[str, str], registered_user: dict[str, str]
+    ) -> None:
+        new_password = f"NewPass{uuid4().hex[:8]}!"
+        response = await client.patch(
+            "/api/v1/users/me/password",
+            json={"current_password": registered_user["password"], "new_password": new_password},
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+        # Verify that the old password no longer works
+        login_response = await client.post(
+            "/api/v1/auth/token",
+            data={"username": registered_user["email"], "password": registered_user["password"]},
+        )
+        assert login_response.status_code == 401
+
+        # Verify that the new password works
+        login_response = await client.post(
+            "/api/v1/auth/token",
+            data={"username": registered_user["email"], "password": new_password},
+        )
+        assert login_response.status_code == 200
+
+    async def test_change_password_with_wrong_current_password_fails(
+        self, client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
+        response = await client.patch(
+            "/api/v1/users/me/password",
+            json={"current_password": "WrongPassword!", "new_password": "NewPass123!"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 400
+
+    async def test_new_password_must_meet_strength_requirements(
+        self, client: AsyncClient, auth_headers: dict[str, str], registered_user: dict[str, str]
+    ) -> None:
+        weak_password = "short"
+        response = await client.patch(
+            "/api/v1/users/me/password",
+            json={"current_password": registered_user["password"], "new_password": weak_password},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
