@@ -7,11 +7,11 @@ from fastapi import APIRouter, status
 from app.api.deps import CurrentUserDependency, ItemServiceDependency, PaginationDependency
 from app.api.v1.schemas.common import Page
 from app.api.v1.schemas.item import (
+    CreateItemRequest,
     ExternalItemPayload,
-    ItemCreate,
     ItemImportRequest,
     ItemResponse,
-    ItemUpdate,
+    UpdateItemRequest,
 )
 from app.persistence.models.item import Item
 from app.utils.http_client import fetch_external
@@ -57,7 +57,7 @@ async def get_my_item(
     summary="Create a new item",
 )
 async def create_my_item(
-    data: ItemCreate,
+    data: CreateItemRequest,
     current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
 ) -> Item:
@@ -68,7 +68,7 @@ async def create_my_item(
 @router.patch("/{item_id}", response_model=ItemResponse, summary="Update one of my items")
 async def update_my_item(
     item_id: UUID,
-    data: ItemUpdate,
+    data: UpdateItemRequest,
     current_user: CurrentUserDependency,
     item_service: ItemServiceDependency,
 ) -> Item:
@@ -122,7 +122,7 @@ async def import_item_from_url(
     # API1: owner_id is always the authenticated user — never from the external payload
     return await item_service.create_item(
         owner_id=current_user.id,  # type: ignore [arg-type]
-        data=ItemCreate(
+        data=CreateItemRequest(
             title=external.title, description=external.description, price=external.price
         ),
     )

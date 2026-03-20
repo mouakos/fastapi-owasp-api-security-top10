@@ -34,8 +34,24 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins_list(self) -> list[str]:
-        """Return the allowed origins as a list of URL strings."""
-        return [str(AnyHttpUrl(origin.strip())) for origin in self.allowed_origins.split(",")]
+        """Return the allowed origins as a list of URL strings.
+
+        If ALLOWED_ORIGINS is set, it is used verbatim (comma-separated).
+        Otherwise a safe default is applied:
+          - development: localhost on the most common dev-server ports.
+          - production:  no origins (deny all cross-origin requests until
+                         ALLOWED_ORIGINS is explicitly configured).
+        """
+        if self.allowed_origins.strip():
+            return [str(AnyHttpUrl(origin.strip())) for origin in self.allowed_origins.split(",")]
+        if self.environment != "production":
+            return [
+                "http://localhost",
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:8080",
+            ]
+        return []
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"

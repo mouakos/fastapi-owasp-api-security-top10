@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from app.api.v1.schemas.item import ItemCreate, ItemUpdate
+from app.api.v1.schemas.item import CreateItemRequest, UpdateItemRequest
 from app.core.exceptions import AuthorizationError, NotFoundError
 from app.persistence.models.item import Item
 from app.persistence.uow.base import UnitOfWorkBase
@@ -15,12 +15,12 @@ class ItemService:
         """Initialize the service with a unit of work instance."""
         self._uow = uow
 
-    async def create_item(self, owner_id: UUID, data: ItemCreate) -> Item:
+    async def create_item(self, owner_id: UUID, data: CreateItemRequest) -> Item:
         """Create a new item owned by the specified user.
 
         Args:
             owner_id (UUID): The ID of the user who will own the item.
-            data (ItemCreate): The details of the item to create.
+            data (CreateItemRequest): The details of the item to create.
 
         Returns:
             Item: The newly created item instance.
@@ -76,13 +76,13 @@ class ItemService:
         total = await self._uow.items.count(**filters)
         return items, total
 
-    async def update_item(self, item_id: UUID, owner_id: UUID, data: ItemUpdate) -> Item:
+    async def update_item(self, item_id: UUID, owner_id: UUID, data: UpdateItemRequest) -> Item:
         """Update an existing item with the provided fields.
 
         Args:
             item_id (UUID): The unique identifier of the item to update.
             owner_id (UUID): The ID of the user who owns the item.
-            data (ItemUpdate): The fields to update on the item.
+            data (UpdateItemRequest): The fields to update on the item.
 
         Returns:
             Item: The updated item instance.

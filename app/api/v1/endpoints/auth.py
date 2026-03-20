@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import UserServiceDependency, limiter
 from app.api.v1.schemas.auth import Token
-from app.api.v1.schemas.user import UserCreate, UserResponse
+from app.api.v1.schemas.user import CreateUserRequest, UserResponse
 from app.persistence.models.user import User
 
 router = APIRouter()
@@ -27,7 +27,7 @@ router = APIRouter()
 async def register(
     request: Request,  # noqa: ARG001
     response: Response,  # noqa: ARG001
-    data: UserCreate,
+    data: CreateUserRequest,
     user_service: UserServiceDependency,
 ) -> User:  # noqa: ARG001
     """Register a new user account."""

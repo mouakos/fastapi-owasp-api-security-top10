@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
+from app.api.v1.schemas.user import AdminUpdateUserRequest, CreateUserRequest, UpdateUserRequest
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.core.security.password import hash_password
@@ -22,7 +22,7 @@ class TestCreateUser:
         mock_uow.commit = AsyncMock()
 
         service = UserService(mock_uow)
-        data = UserCreate(email="new@example.com", username="newuser", password="Password1!")
+        data = CreateUserRequest(email="new@example.com", username="newuser", password="Password1!")
         result = await service.create_user(data)
 
         assert result.email == "new@example.com"
@@ -36,7 +36,7 @@ class TestCreateUser:
         mock_uow.commit = AsyncMock()
 
         service = UserService(mock_uow)
-        data = UserCreate(email="new@example.com", username="newuser", password="Password1!")
+        data = CreateUserRequest(email="new@example.com", username="newuser", password="Password1!")
         result = await service.create_user(data)
 
         assert result.hashed_password != "Password1!"
@@ -46,7 +46,7 @@ class TestCreateUser:
         mock_uow.users.find_by_email = AsyncMock(return_value=existing)
 
         service = UserService(mock_uow)
-        data = UserCreate(email="dup@example.com", username="newuser", password="Password1!")
+        data = CreateUserRequest(email="dup@example.com", username="newuser", password="Password1!")
 
         with pytest.raises(ConflictError):
             await service.create_user(data)
@@ -57,7 +57,7 @@ class TestCreateUser:
         mock_uow.users.find_by_username = AsyncMock(return_value=existing)
 
         service = UserService(mock_uow)
-        data = UserCreate(email="new@example.com", username="taken", password="Password1!")
+        data = CreateUserRequest(email="new@example.com", username="taken", password="Password1!")
 
         with pytest.raises(ConflictError):
             await service.create_user(data)
@@ -232,7 +232,7 @@ class TestUpdateUser:
         mock_uow.commit = AsyncMock()
 
         service = UserService(mock_uow)
-        result = await service.update_user(user_id, UserUpdate(username="newname"))
+        result = await service.update_user(user_id, UpdateUserRequest(username="newname"))
 
         assert result.username == "newname"
         mock_uow.commit.assert_awaited_once()
@@ -242,7 +242,7 @@ class TestUpdateUser:
 
         service = UserService(mock_uow)
         with pytest.raises(NotFoundError):
-            await service.update_user(uuid4(), UserUpdate(username="newname"))
+            await service.update_user(uuid4(), UpdateUserRequest(username="newname"))
 
     async def test_returns_unchanged_user_when_username_is_none(self, mock_uow: AsyncMock) -> None:
         user_id = uuid4()
@@ -250,7 +250,7 @@ class TestUpdateUser:
         mock_uow.users.find_by_id = AsyncMock(return_value=user)
 
         service = UserService(mock_uow)
-        result = await service.update_user(user_id, UserUpdate(username=None))
+        result = await service.update_user(user_id, UpdateUserRequest(username=None))
 
         assert result == user
         mock_uow.users.update.assert_not_called()
@@ -266,7 +266,7 @@ class TestUpdateUser:
 
         service = UserService(mock_uow)
         with pytest.raises(ConflictError):
-            await service.update_user(user_id, UserUpdate(username="taken"))
+            await service.update_user(user_id, UpdateUserRequest(username="taken"))
 
 
 class TestListUsers:
@@ -307,7 +307,7 @@ class TestAdminUpdateUser:
         mock_uow.commit = AsyncMock()
 
         service = UserService(mock_uow)
-        result = await service.admin_update_user(user_id, UserAdminUpdate(is_active=False))
+        result = await service.admin_update_user(user_id, AdminUpdateUserRequest(is_active=False))
 
         assert result == updated
         mock_uow.commit.assert_awaited_once()
@@ -317,4 +317,4 @@ class TestAdminUpdateUser:
 
         service = UserService(mock_uow)
         with pytest.raises(NotFoundError):
-            await service.admin_update_user(uuid4(), UserAdminUpdate(is_active=False))
+            await service.admin_update_user(uuid4(), AdminUpdateUserRequest(is_active=False))

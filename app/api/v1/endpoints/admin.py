@@ -12,7 +12,7 @@ from app.api.deps import (
 )
 from app.api.v1.schemas.common import Page
 from app.api.v1.schemas.item import ItemResponse
-from app.api.v1.schemas.user import UserAdminUpdate, UserResponse
+from app.api.v1.schemas.user import AdminUpdateUserRequest, UserResponse
 from app.persistence.models.item import Item
 from app.persistence.models.user import User
 
@@ -41,7 +41,7 @@ async def list_all_users(
 async def update_user(
     _: CurrentAdminUserDependency,
     user_id: UUID,
-    data: UserAdminUpdate,
+    data: AdminUpdateUserRequest,
     user_service: UserServiceDependency,
 ) -> User:
     """Partially update a user and return the updated record."""

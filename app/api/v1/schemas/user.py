@@ -13,7 +13,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from app.persistence.models.user import UserRole
 
 
-class UserCreate(BaseModel):
+class CreateUserRequest(BaseModel):
     """Schema for user registration requests.
 
     Attributes:
@@ -69,7 +69,7 @@ class UserCreate(BaseModel):
         return v
 
 
-class UserUpdate(BaseModel):
+class UpdateUserRequest(BaseModel):
     """Schema for regular user self-update requests.
 
     API3: Only the username is patchable by the user themselves.
@@ -100,7 +100,7 @@ class UserUpdate(BaseModel):
         return v
 
 
-class UserAdminUpdate(BaseModel):
+class AdminUpdateUserRequest(BaseModel):
     """Schema for admin-only user update requests.
 
     API5: Role and account status changes are restricted to admin users only.

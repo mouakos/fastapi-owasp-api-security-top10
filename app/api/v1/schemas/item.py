@@ -42,7 +42,7 @@ class ExternalItemPayload(BaseModel):
     price: float
 
 
-class ItemCreate(BaseModel):
+class CreateItemRequest(BaseModel):
     """Schema for item creation requests.
 
     Attributes:
@@ -95,7 +95,7 @@ class ItemCreate(BaseModel):
         return round(v, 2)
 
 
-class ItemUpdate(BaseModel):
+class UpdateItemRequest(BaseModel):
     """Schema for partial item update requests.
 
     All fields are optional — only provided fields will be updated.

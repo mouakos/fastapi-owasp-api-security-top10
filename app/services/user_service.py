@@ -4,7 +4,12 @@ from datetime import timedelta
 from uuid import UUID
 
 from app.api.v1.schemas.auth import Token
-from app.api.v1.schemas.user import ChangePasswordRequest, UserAdminUpdate, UserCreate, UserUpdate
+from app.api.v1.schemas.user import (
+    AdminUpdateUserRequest,
+    ChangePasswordRequest,
+    CreateUserRequest,
+    UpdateUserRequest,
+)
 from app.core.config import settings
 from app.core.exceptions import (
     AuthenticationError,
@@ -26,11 +31,11 @@ class UserService:
         """Initialize the service with a unit of work instance."""
         self._uow = uow
 
-    async def create_user(self, data: UserCreate) -> User:
+    async def create_user(self, data: CreateUserRequest) -> User:
         """Create a new user with the provided details.
 
         Args:
-            data (UserCreate): The details of the user to create.
+            data (CreateUserRequest): The details of the user to create.
 
         Returns:
             User: The newly created user instance.
@@ -121,12 +126,12 @@ class UserService:
             raise NotFoundError("User", user_id)
         return user
 
-    async def update_user(self, user_id: UUID, data: UserUpdate) -> User:
+    async def update_user(self, user_id: UUID, data: UpdateUserRequest) -> User:
         """Update an existing user's information.
 
         Args:
             user_id (UUID): The unique identifier of the user to update.
-            data (UserUpdate): The fields to update on the user.
+            data (UpdateUserRequest): The fields to update on the user.
 
         Returns:
             User: The updated user instance.
@@ -160,12 +165,12 @@ class UserService:
         total = await self._uow.users.count()
         return users, total
 
-    async def admin_update_user(self, user_id: UUID, data: UserAdminUpdate) -> User:
+    async def admin_update_user(self, user_id: UUID, data: AdminUpdateUserRequest) -> User:
         """Admin-level update of a user's information.
 
         Args:
             user_id (UUID): The unique identifier of the user to update.
-            data (UserAdminUpdate): The fields to update on the user.
+            data (AdminUpdateUserRequest): The fields to update on the user.
 
         Returns:
             User: The updated user instance.

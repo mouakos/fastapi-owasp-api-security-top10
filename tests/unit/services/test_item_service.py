@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.api.v1.schemas.item import ItemCreate
+from app.api.v1.schemas.item import CreateItemRequest
 from app.core.exceptions import AuthorizationError, NotFoundError
 from app.persistence.models.item import Item
 from app.services.item_service import ItemService
@@ -17,7 +17,7 @@ class TestCreateItem:
 
         service = ItemService(mock_uow)
         owner_id: UUID = uuid4()
-        data = ItemCreate(title="Test Item", price=9.99)
+        data = CreateItemRequest(title="Test Item", price=9.99)
         result = await service.create_item(owner_id, data)
 
         assert result.title == "Test Item"
@@ -30,7 +30,7 @@ class TestCreateItem:
         mock_uow.commit = AsyncMock()
 
         service = ItemService(mock_uow)
-        data = ItemCreate(title="Item", description="A description", price=1.00)
+        data = CreateItemRequest(title="Item", description="A description", price=1.00)
         result = await service.create_item(uuid4(), data)
 
         assert result.description == "A description"
@@ -112,7 +112,7 @@ class TestDeleteItem:
 
 class TestUpdateItem:
     async def test_updates_item_for_owner(self, mock_uow: AsyncMock) -> None:
-        from app.api.v1.schemas.item import ItemUpdate
+        from app.api.v1.schemas.item import UpdateItemRequest
 
         owner_id: UUID = uuid4()
         item_id: UUID = uuid4()
@@ -123,29 +123,31 @@ class TestUpdateItem:
         mock_uow.commit = AsyncMock()
 
         service = ItemService(mock_uow)
-        result = await service.update_item(item_id, owner_id, ItemUpdate(title="New", price=2.0))
+        result = await service.update_item(
+            item_id, owner_id, UpdateItemRequest(title="New", price=2.0)
+        )
 
         assert result.title == "New"
         mock_uow.commit.assert_awaited_once()
 
     async def test_raises_not_found_when_item_missing(self, mock_uow: AsyncMock) -> None:
-        from app.api.v1.schemas.item import ItemUpdate
+        from app.api.v1.schemas.item import UpdateItemRequest
 
         mock_uow.items.find_by_id = AsyncMock(return_value=None)
 
         service = ItemService(mock_uow)
         with pytest.raises(NotFoundError):
-            await service.update_item(uuid4(), uuid4(), ItemUpdate(title="X", price=1.0))
+            await service.update_item(uuid4(), uuid4(), UpdateItemRequest(title="X", price=1.0))
 
     async def test_raises_authorization_error_for_wrong_owner(self, mock_uow: AsyncMock) -> None:
-        from app.api.v1.schemas.item import ItemUpdate
+        from app.api.v1.schemas.item import UpdateItemRequest
 
         item = Item(id=uuid4(), title="Test", price=1.0, owner_id=uuid4())
         mock_uow.items.find_by_id = AsyncMock(return_value=item)
 
         service = ItemService(mock_uow)
         with pytest.raises(AuthorizationError):
-            await service.update_item(item.id, uuid4(), ItemUpdate(title="X", price=1.0))
+            await service.update_item(item.id, uuid4(), UpdateItemRequest(title="X", price=1.0))
 
 
 class TestDeleteItemNotFound:

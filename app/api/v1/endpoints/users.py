@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.deps import CurrentUserDependency, UserServiceDependency
-from app.api.v1.schemas.user import ChangePasswordRequest, UserResponse, UserUpdate
+from app.api.v1.schemas.user import ChangePasswordRequest, UpdateUserRequest, UserResponse
 from app.persistence.models.user import User
 
 router = APIRouter()
@@ -20,12 +20,12 @@ async def get_me(current_user: CurrentUserDependency) -> User:
 
 
 # ---------------------------------------------------------------------------
-# API3: UserUpdate limits patchable fields to username only — role and
+# API3: UpdateUserRequest limits patchable fields to username only — role and
 #       is_active are intentionally excluded to prevent privilege escalation.
 # ---------------------------------------------------------------------------
 @router.patch("/me", response_model=UserResponse, summary="Update my profile")
 async def update_me(
-    data: UserUpdate,
+    data: UpdateUserRequest,
     current_user: CurrentUserDependency,
     user_service: UserServiceDependency,
 ) -> User:
