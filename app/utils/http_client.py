@@ -102,7 +102,7 @@ async def fetch_external[T: BaseModel](
             if len(response.content) > _MAX_RESPONSE_BYTES:
                 raise BadGatewayError(
                     service_name,
-                    f"Response from '{service_name}' exceeds the maximum allowed size",
+                    f"'{service_name}' returned a response that exceeds the maximum allowed size of {_MAX_RESPONSE_BYTES} bytes",
                 )
 
     except httpx.TimeoutException as exc:
@@ -121,5 +121,5 @@ async def fetch_external[T: BaseModel](
     except PydanticValidationError as exc:
         raise BadGatewayError(
             service_name,
-            f"Response from '{service_name}' did not match the expected schema",
+            f"'{service_name}' returned an invalid data format that failed validation: {exc.errors()}",
         ) from exc
