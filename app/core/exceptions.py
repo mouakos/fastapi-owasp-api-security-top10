@@ -81,6 +81,14 @@ class ConflictError(AppError):
         )
 
 
+class PasswordMismatchError(AppError):
+    """Current password does not match."""
+
+    def __init__(self, message: str = "Current password is incorrect") -> None:
+        """Initialize the PasswordMismatchError with an optional message."""
+        super().__init__(message=message, status_code=400, error_code="PASSWORD_MISMATCH")
+
+
 class BadGatewayError(AppError):
     """Upstream service returned an invalid response."""
 

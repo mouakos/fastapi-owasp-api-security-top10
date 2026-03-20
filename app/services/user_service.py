@@ -4,9 +4,14 @@ from datetime import timedelta
 from uuid import UUID
 
 from app.api.v1.schemas.auth import Token
-from app.api.v1.schemas.user import UserAdminUpdate, UserCreate, UserUpdate
+from app.api.v1.schemas.user import ChangePasswordRequest, UserAdminUpdate, UserCreate, UserUpdate
 from app.core.config import settings
-from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
+from app.core.exceptions import (
+    AuthenticationError,
+    ConflictError,
+    NotFoundError,
+    PasswordMismatchError,
+)
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password, verify_password
 from app.persistence.models.user import User
@@ -173,3 +178,24 @@ class UserService:
         updated_user = await self._uow.users.update(user, **data.model_dump(exclude_unset=True))
         await self._uow.commit()
         return updated_user
+
+    async def change_password(self, user_id: UUID, data: ChangePasswordRequest) -> None:
+        """Change a user's password after verifying the current password.
+
+        Args:
+            user_id (UUID): The unique identifier of the user changing their password.
+            data (ChangePasswordRequest): The current and new passwords.
+
+        Raises:
+            NotFoundError: If no user with the given ID exists.
+            PasswordMismatchError: If the current password is incorrect.
+        """
+        user = await self.get_user_by_id(user_id)
+
+        if not verify_password(data.current_password, user.hashed_password):
+            raise PasswordMismatchError()
+
+        user.hashed_password = hash_password(
+            data.new_password
+        )  # API2: new password hashed with Argon2
+        await self._uow.commit()

@@ -136,3 +136,39 @@ class UserResponse(BaseModel):
     role: UserRole
     is_active: bool
     created_at: datetime
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for password change requests.
+
+    Attributes:
+        current_password (str): The user's current plain-text password.
+        new_password (str): The new plain-text password to set.
+    """
+
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_strong(cls, v: str) -> str:
+        """Validate the new password meets strength requirements.
+
+        Args:
+            v (str): The new plain-text password to validate.
+
+        Returns:
+            str: The validated new password.
+
+        Raises:
+            ValueError: If the new password fails any strength requirement.
+        """
+        from app.core.security.password import validate_password_complexity
+
+        if not validate_password_complexity(v):
+            raise ValueError(
+                "New password does not meet complexity requirements: "
+                "must be 8-128 characters with uppercase, lowercase, digit, symbol, and no spaces."
+                "Example of a valid password: 'NewStrongPass1!'"
+            )
+        return v

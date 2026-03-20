@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.deps import CurrentUserDependency, UserServiceDependency
-from app.api.v1.schemas.user import UserResponse, UserUpdate
+from app.api.v1.schemas.user import ChangePasswordRequest, UserResponse, UserUpdate
 from app.persistence.models.user import User
 
 router = APIRouter()
@@ -31,3 +31,13 @@ async def update_me(
 ) -> User:
     """Update the authenticated user's profile information."""
     return await user_service.update_user(current_user.id, data)  # type: ignore [arg-type]
+
+
+@router.patch("/me/password", summary="Change my password", status_code=204)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: CurrentUserDependency,
+    user_service: UserServiceDependency,
+) -> None:
+    """Change the authenticated user's password."""
+    await user_service.change_password(current_user.id, data)  # type: ignore [arg-type]
