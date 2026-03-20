@@ -1,5 +1,7 @@
 """Configuration settings for the FastAPI app."""
 
+from typing import Literal
+
 from pydantic import AnyHttpUrl, EmailStr, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,7 +11,7 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./test.db"
 
-    environment: str = "development"
+    environment: Literal["development", "staging", "production"] = "development"
     api_v1_str: str = "/api/v1"
     allowed_origins: str = ""
 
