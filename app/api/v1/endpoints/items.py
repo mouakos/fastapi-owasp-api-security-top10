@@ -6,8 +6,16 @@ from fastapi import APIRouter, status
 
 from app.api.deps import CurrentUserDependency, ItemServiceDependency, PaginationDependency
 from app.api.v1.schemas.common import Page
-from app.api.v1.schemas.item import ItemCreate, ItemResponse, ItemUpdate
+from app.api.v1.schemas.item import (
+    ExternalItemPayload,
+    ItemCreate,
+    ItemImportRequest,
+    ItemResponse,
+    ItemUpdate,
+)
 from app.persistence.models.item import Item
+from app.utils.http_client import fetch_external
+from app.utils.ssrf import validate_ssrf
 
 router = APIRouter()
 
@@ -78,3 +86,43 @@ async def delete_my_item(
 ) -> None:
     """Delete an item owned by the authenticated user."""
     await item_service.delete_item(item_id=item_id, owner_id=current_user.id)  # type: ignore [arg-type]
+
+
+# ---------------------------------------------------------------------------
+# API7: The user-supplied URL is validated against SSRF attack vectors before
+#       the server makes any outbound request.
+# API10: The external response is parsed through ExternalItemPayload — a strict
+#        Pydantic schema — before any field enters application logic.
+# API1: The resulting item is owned by the authenticated user, set server-side.
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/import",
+    response_model=ItemResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Import an item from an external URL",
+)
+async def import_item_from_url(
+    data: ItemImportRequest,
+    current_user: CurrentUserDependency,
+    item_service: ItemServiceDependency,
+) -> Item:
+    """Fetch item data from a user-supplied URL and create it as a new item."""
+    # API7: Block requests to internal/private networks before making the call
+    safe_url = validate_ssrf(str(data.url))
+
+    # API10: Fetch and validate the external payload through a strict schema
+    external = await fetch_external(
+        url=safe_url,
+        response_model=ExternalItemPayload,
+        service_name=data.url.host if data.url.host else str(data.url),
+    )
+
+    # API1: owner_id is always the authenticated user — never from the external payload
+    return await item_service.create_item(
+        owner_id=current_user.id,  # type: ignore [arg-type]
+        data=ItemCreate(
+            title=external.title, description=external.description, price=external.price
+        ),
+    )

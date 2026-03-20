@@ -7,7 +7,39 @@ internal fields can never be set directly by the client.
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, HttpUrl, field_validator
+
+
+class ItemImportRequest(BaseModel):
+    """Schema for importing an item from an external URL.
+
+    API7: The url field is validated against SSRF attack vectors before the
+          server makes any outbound request.
+
+    Attributes:
+        url (HttpUrl): The public HTTPS endpoint that returns item JSON.
+    """
+
+    url: HttpUrl
+
+
+class ExternalItemPayload(BaseModel):
+    """Schema used to validate the JSON returned by an external item source.
+
+    API10: Raw data from the upstream service is parsed through this strict
+           schema before any field is used in application logic.  Fields not
+           declared here are silently ignored; missing or wrongly-typed fields
+           raise a validation error that is surfaced as ExternalServiceError.
+
+    Attributes:
+        title (str): The item title.
+        description (str | None): An optional description.
+        price (float): The item price — must be non-negative.
+    """
+
+    title: str
+    description: str | None = None
+    price: float
 
 
 class ItemCreate(BaseModel):

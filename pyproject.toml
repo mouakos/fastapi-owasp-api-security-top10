@@ -10,6 +10,7 @@ dependencies = [
     "asgi-correlation-id>=4.3.4",
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.135.1",
+    "httpx>=0.28",
     "loguru>=0.7.3",
     "password-validator>=1.0",
     "pwdlib[argon2]>=0.3.0",

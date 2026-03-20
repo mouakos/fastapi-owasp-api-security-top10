@@ -81,14 +81,40 @@ class ConflictError(AppError):
         )
 
 
-class ExternalServiceError(AppError):
-    """Third-party service failed."""
+class BadGatewayError(AppError):
+    """Upstream service returned an invalid response."""
 
     def __init__(self, service: str, message: str | None = None) -> None:
-        """Initialize the ExternalServiceError with a service and optional message."""
+        """Initialize the BadGatewayError with an optional message."""
         super().__init__(
-            message=message or f"External service '{service}' is unavailable",
+            message=message or f"Upstream service '{service}' returned an invalid response",
+            status_code=502,
+            error_code="BAD_GATEWAY",
+            details={"service": service},
+        )
+
+
+class ServiceUnavailableError(AppError):
+    """Service is temporarily unavailable."""
+
+    def __init__(self, service: str, message: str | None = None) -> None:
+        """Initialize the ServiceUnavailableError with an optional message."""
+        super().__init__(
+            message=message or f"Service '{service}' is temporarily unavailable",
             status_code=503,
             error_code="SERVICE_UNAVAILABLE",
+            details={"service": service},
+        )
+
+
+class GatewayTimeoutError(AppError):
+    """Upstream service timed out."""
+
+    def __init__(self, service: str, message: str | None = None) -> None:
+        """Initialize the GatewayTimeoutError with an optional message."""
+        super().__init__(
+            message=message or f"Upstream service '{service}' timed out",
+            status_code=504,
+            error_code="GATEWAY_TIMEOUT",
             details={"service": service},
         )
