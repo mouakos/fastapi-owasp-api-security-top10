@@ -74,6 +74,11 @@ jobs:
         run: uv sync --group dev
 
       - name: Run tests with coverage
+        env:
+          SECRET_KEY: "ci-test-secret-key-not-used-in-production"
+          FIRST_ADMIN_EMAIL: "admin@ci-test.local"
+          FIRST_ADMIN_USERNAME: "ci_admin"
+          FIRST_ADMIN_PASSWORD: "CiAdmin1!"
         run: uv run pytest --cov=app --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage report
