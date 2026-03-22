@@ -29,3 +29,13 @@ repos:
         language: system
         types: [python]
         files: ^app/.*\.py$
+
+  # Audit dependencies for known vulnerabilities (OWASP A06)
+  - repo: local
+    hooks:
+      - id: pip-audit
+        name: pip-audit
+        entry: .venv/Scripts/pip-audit.exe --local
+        language: system
+        pass_filenames: false
+        always_run: true

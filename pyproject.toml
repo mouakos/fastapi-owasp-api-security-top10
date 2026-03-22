@@ -14,9 +14,10 @@ dependencies = [
     "httpx>=0.28",
     "loguru>=0.7.3",
     "password-validator>=1.0",
+    "pip-audit>=2.10.0",
     "pwdlib[argon2]>=0.3.0",
     "pydantic-settings>=2.13.1",
-    "pyjwt>=2.11.0",
+    "pyjwt>=2.12.0",
     "slowapi>=0.1.9",
     "sqlmodel>=0.0.37",
 ]
