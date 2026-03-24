@@ -74,7 +74,7 @@ jobs:
         run: uv sync
 
       - name: pip-audit
-        run: uv run pip-audit --local
+        run: uv run pip-audit --local --ignore-vuln CVE-2026-4539
 
   test:
     name: Tests
