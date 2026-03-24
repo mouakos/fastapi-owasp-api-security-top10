@@ -35,7 +35,9 @@ repos:
     hooks:
       - id: pip-audit
         name: pip-audit
-        entry: .venv/Scripts/pip-audit.exe --local
+        # CVE-2026-4539: affects pygments (transitive via pytest/rich). No fix version yet.
+        # Remove --ignore-vuln once pygments > 2.19.2 is released.
+        entry: .venv/Scripts/pip-audit.exe --local --ignore-vuln CVE-2026-4539
         language: system
         pass_filenames: false
         always_run: true
